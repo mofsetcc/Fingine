@@ -108,7 +108,7 @@ jobs:
         fi
 
     - name: Upload backend coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       continue-on-error: true
       with:
         file: ./backend/coverage.xml
@@ -177,7 +177,7 @@ jobs:
         fi
 
     - name: Upload frontend coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       continue-on-error: true
       with:
         file: ./frontend/coverage/lcov.info
