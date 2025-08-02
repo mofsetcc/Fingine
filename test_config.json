@@ -1,0 +1,89 @@
+{
+  "test_configuration": {
+    "backend": {
+      "base_url": "http://localhost:8000",
+      "database_url": "postgresql://postgres:password@localhost:5432/kessan_test",
+      "redis_url": "redis://localhost:6379/1",
+      "test_timeout": 30,
+      "max_retries": 3
+    },
+    "frontend": {
+      "base_url": "http://localhost:3000",
+      "build_timeout": 120,
+      "test_timeout": 60
+    },
+    "external_apis": {
+      "alpha_vantage": {
+        "enabled": false,
+        "api_key": "demo"
+      },
+      "news_api": {
+        "enabled": false,
+        "api_key": "demo"
+      },
+      "gemini": {
+        "enabled": false,
+        "api_key": "demo"
+      }
+    },
+    "performance_thresholds": {
+      "api_response_time_ms": 2000,
+      "database_query_time_ms": 1000,
+      "cache_operation_time_ms": 100,
+      "page_load_time_ms": 3000
+    },
+    "test_data": {
+      "test_stocks": ["7203", "6758", "9984", "8306"],
+      "test_user_email": "integration_test@example.com",
+      "test_search_queries": ["Toyota", "Sony", "SoftBank", "Mitsubishi"]
+    },
+    "coverage_thresholds": {
+      "backend_line_coverage": 80,
+      "backend_branch_coverage": 70,
+      "frontend_line_coverage": 75,
+      "frontend_branch_coverage": 65
+    }
+  },
+  "test_environments": {
+    "local": {
+      "description": "Local development environment",
+      "services": ["postgresql", "redis", "backend", "frontend"],
+      "docker_compose_file": "docker-compose.dev.yml"
+    },
+    "ci": {
+      "description": "Continuous Integration environment",
+      "services": ["postgresql", "redis", "backend"],
+      "docker_compose_file": "docker-compose.ci.yml"
+    },
+    "staging": {
+      "description": "Staging environment",
+      "backend_url": "https://api-staging.kessan.app",
+      "frontend_url": "https://staging.kessan.app"
+    }
+  },
+  "test_suites": {
+    "unit": {
+      "description": "Unit tests for individual components",
+      "backend_command": "python -m pytest tests/unit/ -v",
+      "frontend_command": "npm test -- --watchAll=false"
+    },
+    "integration": {
+      "description": "Integration tests for system components",
+      "backend_command": "python comprehensive_integration_test.py",
+      "frontend_command": "node frontend_integration_test.js",
+      "database_command": "python database_integration_test.py"
+    },
+    "e2e": {
+      "description": "End-to-end user journey tests",
+      "command": "python e2e_test_suite.py"
+    },
+    "performance": {
+      "description": "Performance and load testing",
+      "command": "python performance_test_suite.py"
+    },
+    "security": {
+      "description": "Security vulnerability testing",
+      "command": "python security_test_suite.py"
+    }
+  }
+}

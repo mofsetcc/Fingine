@@ -6,8 +6,8 @@ from .base import (
     TimestampSchema,
     UUIDSchema,
     PaginatedResponse,
-    SortOrder,
-    FilterOperator
+    PaginationParams,
+    ErrorResponse
 )
 
 # User schemas
@@ -23,8 +23,8 @@ from .user import (
     UserWithProfile,
     AuthToken,
     AuthResponse,
-    OAuthIdentity,
-    OAuthIdentityCreate
+    UserOAuthIdentity,
+    UserOAuthIdentityCreate
 )
 
 # Subscription schemas
@@ -35,9 +35,8 @@ from .subscription import (
     SubscriptionCreate,
     SubscriptionUpdate,
     Subscription,
-    SubscriptionWithPlan,
+    SubscriptionWithUsage,
     UsageQuota,
-    UsageHistory,
     BillingInfo,
     Invoice,
     PlanComparison,
@@ -214,8 +213,8 @@ __all__ = [
     "TimestampSchema", 
     "UUIDSchema",
     "PaginatedResponse",
-    "SortOrder",
-    "FilterOperator",
+    "PaginationParams",
+    "ErrorResponse",
     
     # User
     "UserRegistration",
@@ -229,8 +228,8 @@ __all__ = [
     "UserWithProfile",
     "AuthToken",
     "AuthResponse",
-    "OAuthIdentity",
-    "OAuthIdentityCreate",
+    "UserOAuthIdentity",
+    "UserOAuthIdentityCreate",
     
     # Subscription
     "Plan",
@@ -239,9 +238,8 @@ __all__ = [
     "SubscriptionCreate",
     "SubscriptionUpdate",
     "Subscription",
-    "SubscriptionWithPlan",
+    "SubscriptionWithUsage",
     "UsageQuota",
-    "UsageHistory",
     "BillingInfo",
     "Invoice",
     "PlanComparison",

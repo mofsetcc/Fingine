@@ -7,7 +7,7 @@
   - Configure linting, formatting, and pre-commit hooks
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6_
 
-- [ ] 2. Implement database schema and core data models
+- [x] 2. Implement database schema and core data models
   - [x] 2.1 Create PostgreSQL database schema
     - Write SQL migration scripts for all core tables (users, stocks, financial_reports, ai_analysis_cache)
     - Create database indexes for optimal query performance
@@ -57,35 +57,35 @@
     - _Requirements: 1.1, 1.2, 1.5, 1.6_
 
 - [ ] 4. Develop stock data ingestion and management system
-  - [ ] 4.1 Create data source adapter framework
+  - [x] 4.1 Create data source adapter framework
     - Implement DataSourceRegistry with plugin-based architecture
     - Create base DataSourceAdapter interface with health checking
     - Add automatic failover logic between primary and secondary sources
     - Write unit tests for data source management
     - _Requirements: 10.3, 4.6, 8.1_
 
-  - [ ] 4.2 Implement Alpha Vantage stock price adapter
+  - [x] 4.2 Implement Alpha Vantage stock price adapter
     - Create StockPriceAdapter for Alpha Vantage API integration
     - Add data normalization for OHLCV format
     - Implement rate limiting and cost tracking
     - Write integration tests with mock API responses
     - _Requirements: 4.1, 4.2, 4.6, 9.2_
 
-  - [ ] 4.3 Add Yahoo Finance Japan fallback adapter
+  - [x] 4.3 Add Yahoo Finance Japan fallback adapter
     - Implement secondary data source for stock prices
     - Create data format conversion from Yahoo Finance to internal format
     - Add 15-minute delay handling for free tier users
     - Write tests for data source switching logic
     - _Requirements: 4.3, 4.6_
 
-  - [ ] 4.4 Build EDINET financial data integration
+  - [x] 4.4 Build EDINET financial data integration
     - Create FinancialDataAdapter for EDINET API
     - Implement XBRL/iXBRL parsing for financial statements
     - Add quarterly and annual report processing
     - Write tests for financial data extraction and validation
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-  - [ ] 4.5 Create stock search and discovery endpoints
+  - [x] 4.5 Create stock search and discovery endpoints
     - Implement fuzzy search API for ticker symbols and company names
     - Add market indices data endpoints (Nikkei 225, TOPIX)
     - Create hot stocks endpoint (gainers, losers, most traded)
@@ -94,50 +94,50 @@
     - _Requirements: 2.1, 2.2, 2.3, 2.5_
 
 - [ ] 5. Build news aggregation and sentiment analysis system
-  - [ ] 5.1 Implement news data collection service
+  - [x] 5.1 Implement news data collection service
     - Create NewsDataAdapter for News API and RSS feed integration
     - Add news article deduplication and relevance scoring
     - Implement hourly news collection scheduling
     - Write tests for news data aggregation
     - _Requirements: 6.1, 6.3, 6.5_
 
-  - [ ] 5.2 Add Japanese sentiment analysis
+  - [x] 5.2 Add Japanese sentiment analysis
     - Integrate nlp-waseda/roberta-base-japanese-sentiment model
     - Create batch sentiment analysis for performance optimization
     - Implement sentiment timeline generation
     - Write tests for Japanese text sentiment analysis
     - _Requirements: 6.2, 6.4, 6.6_
 
-  - [ ] 5.3 Create news-stock relationship mapping
+  - [x] 5.3 Create news-stock relationship mapping
     - Implement automatic stock-news linking based on ticker and company names
     - Add relevance scoring for news articles
     - Create news filtering by stock ticker
     - Write tests for news-stock association logic
     - _Requirements: 6.1, 6.2_
 
-- [ ] 6. Develop AI analysis engine
-  - [ ] 6.1 Set up Google Gemini API integration
+- [x] 6. Develop AI analysis engine
+  - [x] 6.1 Set up Google Gemini API integration
     - Create GeminiAnalysisClient with cost tracking
     - Implement prompt template system for different analysis types
     - Add response parsing and validation
     - Write unit tests for LLM integration
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-  - [ ] 6.2 Build data transformation pipeline
+  - [x] 6.2 Build data transformation pipeline
     - Create DataTransformer to convert raw data into LLM-friendly format
     - Implement technical indicator calculations (SMA, RSI, etc.)
     - Add financial data contextualization
     - Write tests for data transformation logic
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-  - [ ] 6.3 Implement AI analysis service
+  - [x] 6.3 Implement AI analysis service
     - Create AIAnalysisService with multi-source data aggregation
     - Add short-term, mid-term, and long-term analysis generation
     - Implement analysis caching to avoid unnecessary LLM calls
     - Write integration tests for complete analysis pipeline
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 9.6_
 
-  - [ ] 6.4 Add cost control and budget management
+  - [x] 6.4 Add cost control and budget management
     - Implement CostManager with daily and monthly budget tracking
     - Add intelligent caching based on market hours and data freshness
     - Create cost estimation for LLM API calls
@@ -145,7 +145,7 @@
     - _Requirements: 9.2, 9.6_
 
 - [ ] 7. Create frontend dashboard and stock analysis interface
-  - [ ] 7.1 Build main dashboard component
+  - [x] 7.1 Build main dashboard component
     - Create Dashboard component with market indices display
     - Implement stock search with autocomplete functionality
     - Add hot stocks section with real-time updates
@@ -153,7 +153,7 @@
     - Write component tests for dashboard functionality
     - _Requirements: 2.1, 2.2, 2.3, 2.5_
 
-  - [ ] 7.2 Develop stock analysis page
+  - [x] 7.2 Develop stock analysis page
     - Create StockAnalysis component with inverted pyramid layout
     - Implement AI analysis display (short/mid/long term)
     - Add interactive TradingView charts integration
@@ -161,7 +161,7 @@
     - Write tests for stock analysis components
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 5.1_
 
-  - [ ] 7.3 Add watchlist management
+  - [x] 7.3 Add watchlist management
     - Create watchlist CRUD operations in backend
     - Implement watchlist UI components
     - Add real-time price updates for watchlist stocks

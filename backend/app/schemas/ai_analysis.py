@@ -90,7 +90,7 @@ class AIAnalysisCreate(AIAnalysisBase):
     parameters: Optional[Dict[str, Any]] = Field(None, description="Analysis parameters")
 
 
-class AIAnalysis(BaseSchema, UUIDSchema, AIAnalysisBase, TimestampSchema):
+class AIAnalysis(UUIDSchema, AIAnalysisBase, TimestampSchema):
     """AI analysis response schema."""
     
     result: Optional[Dict[str, Any]] = Field(None, description="Analysis result")

@@ -1,6 +1,6 @@
 """Watchlist Pydantic schemas."""
 
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from decimal import Decimal
@@ -11,7 +11,63 @@ from app.schemas.base import BaseSchema, TimestampSchema, UUIDSchema, PaginatedR
 from app.schemas.stock import Stock
 
 
-# Watchlist Schemas
+# Simple Watchlist Stock Schemas (matching current database model)
+class WatchlistStockBase(BaseModel):
+    """Base watchlist stock schema."""
+    
+    ticker: str = Field(..., max_length=10, description="Stock ticker")
+    notes: Optional[str] = Field(None, max_length=1000, description="User notes about the stock")
+
+
+class WatchlistStockCreate(WatchlistStockBase):
+    """Watchlist stock creation schema."""
+    pass
+
+
+class WatchlistStockUpdate(BaseModel):
+    """Watchlist stock update schema."""
+    
+    notes: Optional[str] = Field(None, max_length=1000, description="User notes about the stock")
+
+
+class WatchlistStockWithPrice(WatchlistStockBase):
+    """Watchlist stock with current price data."""
+    
+    id: Optional[UUID] = Field(None, description="Entry ID")
+    user_id: UUID = Field(..., description="User ID")
+    created_at: datetime = Field(..., description="When stock was added to watchlist")
+    updated_at: datetime = Field(..., description="When stock was last updated")
+    stock: Optional[Stock] = Field(None, description="Stock details")
+    
+    # Price data
+    current_price: Optional[float] = Field(None, description="Current stock price")
+    price_change: Optional[float] = Field(None, description="Price change from previous close")
+    price_change_percent: Optional[float] = Field(None, description="Price change percentage")
+    volume_today: Optional[int] = Field(None, description="Today's trading volume")
+    last_updated: Optional[date] = Field(None, description="Price data last updated")
+    
+    # Alert status (simplified)
+    price_alert_triggered: bool = Field(False, description="Whether price alert was triggered")
+    volume_alert_triggered: bool = Field(False, description="Whether volume alert was triggered")
+
+
+# Bulk Operations Schemas
+class BulkWatchlistStockOperation(BaseModel):
+    """Bulk watchlist stock operation schema."""
+    
+    tickers: List[str] = Field(..., min_items=1, max_items=100, description="Stock tickers")
+
+
+class BulkOperationResult(BaseModel):
+    """Bulk operation result schema."""
+    
+    successful: List[str] = Field(..., description="Successfully processed tickers")
+    failed: List[Dict[str, str]] = Field(..., description="Failed tickers with reasons")
+    already_exists: Optional[List[str]] = Field(None, description="Tickers already in watchlist")
+    not_found: Optional[List[str]] = Field(None, description="Tickers not found in watchlist")
+
+
+# Legacy complex schemas (keeping for future expansion)
 class WatchlistBase(BaseModel):
     """Base watchlist schema."""
     
@@ -59,7 +115,7 @@ class WatchlistUpdate(BaseModel):
         return v
 
 
-class Watchlist(BaseSchema, UUIDSchema, WatchlistBase, TimestampSchema):
+class Watchlist(UUIDSchema, WatchlistBase, TimestampSchema):
     """Watchlist response schema."""
     
     user_id: UUID = Field(..., description="Owner user ID")
@@ -118,7 +174,7 @@ class WatchlistStockUpdate(BaseModel):
     alert_enabled: Optional[bool] = Field(None, description="Whether alerts are enabled")
 
 
-class WatchlistStock(BaseSchema, UUIDSchema, WatchlistStockBase, TimestampSchema):
+class WatchlistStock(UUIDSchema, WatchlistStockBase, TimestampSchema):
     """Watchlist stock response schema."""
     
     watchlist_id: UUID = Field(..., description="Watchlist ID")
@@ -164,7 +220,7 @@ class WatchlistAlertCreate(WatchlistAlertBase):
     pass
 
 
-class WatchlistAlert(BaseSchema, UUIDSchema, WatchlistAlertBase, TimestampSchema):
+class WatchlistAlert(UUIDSchema, WatchlistAlertBase, TimestampSchema):
     """Watchlist alert response schema."""
     
     watchlist_stock: Optional[WatchlistStock] = Field(None, description="Related watchlist stock")

@@ -44,7 +44,7 @@ class FinancialReportCreate(FinancialReportBase):
     data: Dict[str, Any] = Field(..., description="Financial data")
 
 
-class FinancialReport(BaseSchema, FinancialReportBase, TimestampSchema):
+class FinancialReport(FinancialReportBase, TimestampSchema):
     """Financial report response schema."""
     
     data: Dict[str, Any] = Field(..., description="Financial data")
@@ -72,7 +72,7 @@ class EarningsCreate(EarningsBase):
     pass
 
 
-class Earnings(BaseSchema, EarningsBase, TimestampSchema):
+class Earnings(EarningsBase, TimestampSchema):
     """Earnings response schema."""
     pass
 
@@ -119,7 +119,7 @@ class BalanceSheetCreate(BalanceSheetBase):
     pass
 
 
-class BalanceSheet(BaseSchema, BalanceSheetBase, TimestampSchema):
+class BalanceSheet(BalanceSheetBase, TimestampSchema):
     """Balance sheet response schema."""
     pass
 
@@ -171,7 +171,7 @@ class IncomeStatementCreate(IncomeStatementBase):
     pass
 
 
-class IncomeStatement(BaseSchema, IncomeStatementBase, TimestampSchema):
+class IncomeStatement(IncomeStatementBase, TimestampSchema):
     """Income statement response schema."""
     pass
 
@@ -221,7 +221,7 @@ class CashFlowCreate(CashFlowBase):
     pass
 
 
-class CashFlow(BaseSchema, CashFlowBase, TimestampSchema):
+class CashFlow(CashFlowBase, TimestampSchema):
     """Cash flow response schema."""
     pass
 
@@ -271,7 +271,7 @@ class FinancialRatiosCreate(FinancialRatiosBase):
     pass
 
 
-class FinancialRatios(BaseSchema, FinancialRatiosBase, TimestampSchema):
+class FinancialRatios(FinancialRatiosBase, TimestampSchema):
     """Financial ratios response schema."""
     pass
 

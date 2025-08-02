@@ -277,6 +277,23 @@ export interface AnalysisShareCreate {
   expires_at?: Timestamp;
 }
 
+// Simple Analysis Result for UI Components
+export interface AIAnalysisResult {
+  ticker: string;
+  analysisType: 'short_term' | 'mid_term' | 'long_term' | 'comprehensive';
+  rating: string; // 'Strong Bullish', 'Bullish', 'Neutral', 'Bearish', 'Strong Bearish'
+  confidence: number; // 0.0 to 1.0
+  keyFactors: string[];
+  priceTargetRange: {
+    min: number;
+    max: number;
+  };
+  riskFactors: string[];
+  reasoning: string;
+  generatedAt: string;
+  modelVersion: string;
+}
+
 // Analysis State Types (for Redux/Context)
 export interface AIAnalysisState {
   // Current analyses

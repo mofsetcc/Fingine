@@ -3,7 +3,7 @@
  */
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Stock, MarketIndex, HotStock } from '../../types';
+import { HotStock, MarketIndex, Stock } from '../../types/stock';
 
 interface StocksState {
   searchResults: Stock[];

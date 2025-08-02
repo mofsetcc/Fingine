@@ -53,7 +53,7 @@ class NotificationUpdate(BaseModel):
     is_archived: Optional[bool] = Field(None, description="Archive/unarchive notification")
 
 
-class Notification(BaseSchema, UUIDSchema, NotificationBase, TimestampSchema):
+class Notification(UUIDSchema, NotificationBase, TimestampSchema):
     """Notification response schema."""
     
     user_id: UUID = Field(..., description="Target user ID")
@@ -141,7 +141,7 @@ class NotificationPreferencesUpdate(BaseModel):
     max_notifications_per_hour: Optional[int] = Field(None, ge=1, le=100, description="Max notifications per hour")
 
 
-class NotificationPreferences(BaseSchema, UUIDSchema, NotificationPreferencesBase, TimestampSchema):
+class NotificationPreferences(UUIDSchema, NotificationPreferencesBase, TimestampSchema):
     """Notification preferences response schema."""
     
     user_id: UUID = Field(..., description="User ID")
@@ -179,7 +179,7 @@ class NotificationTemplateUpdate(BaseModel):
     is_active: Optional[bool] = Field(None, description="Whether template is active")
 
 
-class NotificationTemplate(BaseSchema, UUIDSchema, NotificationTemplateBase, TimestampSchema):
+class NotificationTemplate(UUIDSchema, NotificationTemplateBase, TimestampSchema):
     """Notification template response schema."""
     pass
 
@@ -213,7 +213,7 @@ class NotificationChannelUpdate(BaseModel):
     configuration: Optional[Dict[str, Any]] = Field(None, description="Channel configuration")
 
 
-class NotificationChannel(BaseSchema, UUIDSchema, NotificationChannelBase, TimestampSchema):
+class NotificationChannel(UUIDSchema, NotificationChannelBase, TimestampSchema):
     """Notification channel response schema."""
     
     user_id: UUID = Field(..., description="User ID")
@@ -245,7 +245,7 @@ class NotificationDeliveryCreate(NotificationDeliveryBase):
     pass
 
 
-class NotificationDelivery(BaseSchema, UUIDSchema, NotificationDeliveryBase, TimestampSchema):
+class NotificationDelivery(UUIDSchema, NotificationDeliveryBase, TimestampSchema):
     """Notification delivery response schema."""
     pass
 

@@ -3,7 +3,7 @@
  */
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AIAnalysisResult } from '../../types';
+import { AIAnalysisResult } from '../../types/ai-analysis';
 
 interface AnalysisState {
   currentAnalysis: AIAnalysisResult | null;

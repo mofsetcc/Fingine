@@ -5,6 +5,38 @@
 import { BaseEntity, PaginatedResponse, Timestamp, UUID } from './base';
 import { Stock } from './stock';
 
+// Simple Watchlist Stock Types (matching current backend implementation)
+export interface SimpleWatchlistStock {
+  id?: string | null;
+  user_id: UUID;
+  ticker: string;
+  notes?: string;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  stock?: Stock;
+}
+
+export interface SimpleWatchlistStockCreate {
+  ticker: string;
+  notes?: string;
+}
+
+export interface SimpleWatchlistStockUpdate {
+  notes?: string;
+}
+
+export interface WatchlistStockWithPrice extends SimpleWatchlistStock {
+  current_price?: number;
+  price_change?: number;
+  price_change_percent?: number;
+  volume_today?: number;
+  last_updated?: string;
+  
+  // Alert status
+  price_alert_triggered: boolean;
+  volume_alert_triggered: boolean;
+}
+
 // Watchlist Types
 export interface Watchlist extends BaseEntity {
   name: string;

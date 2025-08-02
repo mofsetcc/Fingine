@@ -1,0 +1,60 @@
+/* TradingView Custom Styles for Project Kessan */
+
+/* Chart container styling */
+.tv-chart-container {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Toolbar customization */
+.tv-toolbar {
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* Legend styling */
+.tv-legend {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Price scale styling */
+.tv-price-scale {
+    background-color: #ffffff !important;
+    border-left: 1px solid #e2e8f0 !important;
+}
+
+/* Time scale styling */
+.tv-time-scale {
+    background-color: #ffffff !important;
+    border-top: 1px solid #e2e8f0 !important;
+}
+
+/* Crosshair styling */
+.tv-crosshair-label {
+    background-color: #1f2937 !important;
+    color: #ffffff !important;
+    border-radius: 4px !important;
+}
+
+/* Volume pane styling */
+.tv-volume-pane {
+    border-top: 1px solid #e2e8f0 !important;
+}
+
+/* Loading screen */
+.tv-loading-screen {
+    background-color: #ffffff !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .tv-chart-container {
+        border-radius: 0;
+    }
+
+    .tv-toolbar {
+        padding: 8px !important;
+    }
+}

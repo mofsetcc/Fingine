@@ -3,7 +3,7 @@ User-related Pydantic schemas.
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, validator

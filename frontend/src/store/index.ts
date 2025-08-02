@@ -6,11 +6,12 @@ import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
 // Slice imports (will be created in later tasks)
-import authSlice from './slices/authSlice';
-import stocksSlice from './slices/stocksSlice';
 import analysisSlice from './slices/analysisSlice';
+import authSlice from './slices/authSlice';
 import newsSlice from './slices/newsSlice';
+import stocksSlice from './slices/stocksSlice';
 import uiSlice from './slices/uiSlice';
+import watchlistSlice from './slices/watchlistSlice';
 
 export const store = configureStore({
   reducer: {
@@ -19,6 +20,7 @@ export const store = configureStore({
     analysis: analysisSlice,
     news: newsSlice,
     ui: uiSlice,
+    watchlist: watchlistSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
