@@ -84,7 +84,7 @@ jobs:
     - name: Upload security scan results
       uses: github/codeql-action/upload-sarif@v3
       continue-on-error: true
-      if: always()
+      if: always() && hashFiles('backend-security-scan.sarif') != ''
       with:
         sarif_file: 'backend-security-scan.sarif'
 

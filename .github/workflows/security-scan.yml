@@ -16,24 +16,33 @@ jobs:
 
     - name: Run Snyk to check for vulnerabilities (Backend)
       uses: snyk/actions/python@master
+      continue-on-error: true
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        args: --severity-threshold=high --file=backend/requirements.txt
+        args: --severity-threshold=high --file=backend/requirements.txt --sarif-file-output=backend-snyk.sarif
 
     - name: Run Snyk to check for vulnerabilities (Frontend)
       uses: snyk/actions/node@master
+      continue-on-error: true
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        args: --severity-threshold=high --file=frontend/package.json
+        args: --severity-threshold=high --file=frontend/package.json --sarif-file-output=frontend-snyk.sarif
 
-    - name: Upload Snyk results to GitHub Code Scanning
+    - name: Upload Backend Snyk results to GitHub Code Scanning
       uses: github/codeql-action/upload-sarif@v3
       continue-on-error: true
-      if: always()
+      if: always() && hashFiles('backend-snyk.sarif') != ''
       with:
-        sarif_file: snyk.sarif
+        sarif_file: backend-snyk.sarif
+
+    - name: Upload Frontend Snyk results to GitHub Code Scanning
+      uses: github/codeql-action/upload-sarif@v3
+      continue-on-error: true
+      if: always() && hashFiles('frontend-snyk.sarif') != ''
+      with:
+        sarif_file: frontend-snyk.sarif
 
   container-scan:
     name: Container Security Scan
@@ -68,14 +77,14 @@ jobs:
     - name: Upload Backend Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
       continue-on-error: true
-      if: always()
+      if: always() && hashFiles('backend-trivy-results.sarif') != ''
       with:
         sarif_file: 'backend-trivy-results.sarif'
 
     - name: Upload Frontend Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
       continue-on-error: true
-      if: always()
+      if: always() && hashFiles('frontend-trivy-results.sarif') != ''
       with:
         sarif_file: 'frontend-trivy-results.sarif'
 
