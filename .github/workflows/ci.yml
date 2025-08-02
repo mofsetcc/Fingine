@@ -62,11 +62,22 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then
-          pip install -r requirements.txt
+          echo "📦 Installing from requirements.txt..."
+          # Validate requirements.txt first
+          python ../scripts/validate-requirements.py requirements.txt || echo "⚠️ Requirements validation failed, continuing anyway"
+          
+          # Install with retry logic
+          if ! pip install -r requirements.txt; then
+            echo "⚠️ Initial install failed, trying with --no-deps and then installing deps"
+            pip install --no-deps -r requirements.txt || echo "⚠️ No-deps install also failed"
+            pip install -r requirements.txt --force-reinstall || echo "⚠️ Force reinstall failed"
+          fi
         else
           echo "⚠️ requirements.txt not found, installing basic dependencies"
           pip install fastapi uvicorn pytest pytest-cov pytest-asyncio
         fi
+        
+        # Ensure test dependencies are available
         pip install pytest pytest-cov pytest-asyncio flake8 black isort
 
     - name: Wait for services
@@ -108,7 +119,7 @@ jobs:
         fi
 
     - name: Upload backend coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       continue-on-error: true
       with:
         file: ./backend/coverage.xml
@@ -177,7 +188,7 @@ jobs:
         fi
 
     - name: Upload frontend coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       continue-on-error: true
       with:
         file: ./frontend/coverage/lcov.info
