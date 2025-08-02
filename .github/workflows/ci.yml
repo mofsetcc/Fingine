@@ -147,29 +147,48 @@ jobs:
       working-directory: ./frontend
       run: |
         if [ -f package-lock.json ]; then
+          echo "📦 Installing with npm ci..."
           npm ci
         elif [ -f package.json ]; then
+          echo "📦 Installing with npm install..."
           npm install
         else
           echo "❌ No package.json found in frontend directory"
           exit 1
         fi
+        
+        # Verify critical ESLint dependencies are installed
+        echo "🔍 Verifying ESLint dependencies..."
+        npm list @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint-plugin-react eslint-plugin-react-hooks || echo "⚠️ Some ESLint dependencies missing"
 
     - name: Run frontend linting
       working-directory: ./frontend
       continue-on-error: true
       run: |
         echo "🔍 Running frontend linting..."
-        if npm run lint --if-present; then
-          echo "✅ ESLint passed"
+        
+        # Check if ESLint config exists
+        if [ -f ".eslintrc.js" ] || [ -f ".eslintrc.json" ] || [ -f "eslint.config.js" ]; then
+          echo "✅ ESLint config found"
+          
+          # Try to run ESLint
+          if npm run lint --if-present; then
+            echo "✅ ESLint passed"
+          else
+            echo "⚠️ ESLint found issues, but continuing..."
+            # Try with --max-warnings to allow warnings
+            npx eslint src --ext .ts,.tsx --max-warnings 50 || echo "⚠️ ESLint failed with many issues"
+          fi
         else
-          echo "⚠️ ESLint found issues"
+          echo "⚠️ No ESLint config found, skipping linting"
         fi
         
+        # TypeScript check
         if npm run type-check --if-present; then
           echo "✅ TypeScript check passed"
         else
-          echo "⚠️ TypeScript issues found"
+          echo "⚠️ TypeScript issues found, trying direct tsc..."
+          npx tsc --noEmit --skipLibCheck || echo "⚠️ TypeScript check failed"
         fi
 
     - name: Run frontend tests
