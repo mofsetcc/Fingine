@@ -29,7 +29,8 @@ jobs:
         args: --severity-threshold=high --file=frontend/package.json
 
     - name: Upload Snyk results to GitHub Code Scanning
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
+      continue-on-error: true
       if: always()
       with:
         sarif_file: snyk.sarif
@@ -64,11 +65,19 @@ jobs:
         format: 'sarif'
         output: 'frontend-trivy-results.sarif'
 
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v2
+    - name: Upload Backend Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      continue-on-error: true
       if: always()
       with:
         sarif_file: 'backend-trivy-results.sarif'
+
+    - name: Upload Frontend Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      continue-on-error: true
+      if: always()
+      with:
+        sarif_file: 'frontend-trivy-results.sarif'
 
   secrets-scan:
     name: Secrets Scan

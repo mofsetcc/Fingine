@@ -76,7 +76,8 @@ jobs:
         output: 'frontend-trivy-results.sarif'
 
     - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
+      continue-on-error: true
       if: always()
       with:
         sarif_file: 'backend-trivy-results.sarif'
