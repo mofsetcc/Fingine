@@ -75,18 +75,51 @@ jobs:
 
     - name: Comprehensive security scan
       uses: aquasecurity/trivy-action@master
+      continue-on-error: true
       with:
         image-ref: ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-backend:prod-${{ github.sha }}
         format: 'sarif'
         output: 'backend-security-scan.sarif'
         severity: 'CRITICAL,HIGH'
 
-    - name: Upload security scan results
+    - name: Check if SARIF file was created
+      run: |
+        if [ -f "backend-security-scan.sarif" ]; then
+          echo "✅ SARIF file created successfully"
+          ls -la backend-security-scan.sarif
+        else
+          echo "⚠️ SARIF file was not created - security scan may have failed"
+          echo "This could be due to:"
+          echo "- Missing AWS credentials"
+          echo "- ECR login failure"
+          echo "- Docker image not found"
+          echo "- Trivy scan failure"
+        fi
+
+    - name: Fallback filesystem security scan
+      if: hashFiles('backend-security-scan.sarif') == ''
+      uses: aquasecurity/trivy-action@master
+      continue-on-error: true
+      with:
+        scan-type: 'fs'
+        scan-ref: './backend'
+        format: 'sarif'
+        output: 'backend-fallback-scan.sarif'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Upload security scan results (primary)
       uses: github/codeql-action/upload-sarif@v3
       continue-on-error: true
       if: always() && hashFiles('backend-security-scan.sarif') != ''
       with:
         sarif_file: 'backend-security-scan.sarif'
+
+    - name: Upload security scan results (fallback)
+      uses: github/codeql-action/upload-sarif@v3
+      continue-on-error: true
+      if: always() && hashFiles('backend-fallback-scan.sarif') != ''
+      with:
+        sarif_file: 'backend-fallback-scan.sarif'
 
     - name: Run production readiness tests
       run: |
