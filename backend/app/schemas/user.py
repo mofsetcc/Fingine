@@ -316,3 +316,41 @@ class UserLogin(BaseModel):
     email: EmailStr = Field(..., description="User email address")
     password: str = Field(..., description="User password")
     remember_me: bool = Field(False, description="Remember login session")
+
+
+# GDPR Compliance Schemas
+class GDPRConsentRequest(BaseModel):
+    """GDPR consent request schema."""
+    
+    purpose: str = Field(..., description="Purpose of data processing")
+    consent_given: bool = Field(..., description="Whether consent is given")
+    consent_text: str = Field(..., description="Text of consent agreement")
+
+
+class GDPRDataRequest(BaseModel):
+    """GDPR data request schema."""
+    
+    keep_legal_basis: bool = Field(True, description="Keep data required for legal compliance")
+    confirmation: bool = Field(..., description="Confirmation that user understands consequences")
+
+
+class GDPRConsentStatus(BaseModel):
+    """GDPR consent status schema."""
+    
+    purpose: str = Field(..., description="Purpose of data processing")
+    status: str = Field(..., description="Consent status")
+    granted_at: Optional[datetime] = Field(None, description="When consent was granted")
+    withdrawn_at: Optional[datetime] = Field(None, description="When consent was withdrawn")
+
+
+class GDPRDataExport(BaseModel):
+    """GDPR data export schema."""
+    
+    personal_information: Dict[str, Any] = Field(..., description="Personal information")
+    preferences: Dict[str, Any] = Field(..., description="User preferences")
+    consent_records: Dict[str, Any] = Field(..., description="Consent records")
+    subscription_data: Dict[str, Any] = Field(..., description="Subscription data")
+    usage_data: List[Dict[str, Any]] = Field(..., description="Usage data")
+    watchlist_data: List[Dict[str, Any]] = Field(..., description="Watchlist data")
+    analysis_history: List[Dict[str, Any]] = Field(..., description="Analysis history")
+    export_metadata: Dict[str, Any] = Field(..., description="Export metadata")

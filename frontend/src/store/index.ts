@@ -10,6 +10,7 @@ import analysisSlice from './slices/analysisSlice';
 import authSlice from './slices/authSlice';
 import newsSlice from './slices/newsSlice';
 import stocksSlice from './slices/stocksSlice';
+import subscriptionSlice from './slices/subscriptionSlice';
 import uiSlice from './slices/uiSlice';
 import watchlistSlice from './slices/watchlistSlice';
 
@@ -19,6 +20,7 @@ export const store = configureStore({
     stocks: stocksSlice,
     analysis: analysisSlice,
     news: newsSlice,
+    subscription: subscriptionSlice,
     ui: uiSlice,
     watchlist: watchlistSlice,
   },

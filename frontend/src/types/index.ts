@@ -23,6 +23,9 @@ export * from './watchlist';
 // Subscription types
 export * from './subscription';
 
+// News types
+export * from './news';
+
 // Notification types
 export * from './notification';
 

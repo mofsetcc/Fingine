@@ -1,0 +1,183 @@
+/* Performance-optimized CSS for better loading and rendering */
+
+/* Critical CSS for above-the-fold content */
+.critical-content {
+    /* Ensure critical content renders immediately */
+    contain: layout style paint;
+}
+
+/* Lazy loading styles */
+.lazy {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.lazy.loaded {
+    opacity: 1;
+}
+
+/* Image optimization styles */
+.optimized-image {
+    /* Prevent layout shift during image loading */
+    aspect-ratio: attr(width) / attr(height);
+    object-fit: cover;
+    background-color: #f3f4f6;
+}
+
+.optimized-image.loading {
+    background-image: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+    /* Use GPU acceleration for smooth animations */
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+.contain-layout {
+    /* Contain layout calculations to improve performance */
+    contain: layout;
+}
+
+.contain-paint {
+    /* Contain paint operations */
+    contain: paint;
+}
+
+.contain-strict {
+    /* Strict containment for maximum performance */
+    contain: strict;
+}
+
+/* Reduce repaints and reflows */
+.no-select {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.hardware-accelerated {
+    /* Force hardware acceleration */
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* Optimize font loading */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    /* Improve font loading performance */
+    src: local('Inter Regular'), local('Inter-Regular'),
+        url('/fonts/inter-v12-latin-regular.woff2') format('woff2'),
+        url('/fonts/inter-v12-latin-regular.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: local('Inter SemiBold'), local('Inter-SemiBold'),
+        url('/fonts/inter-v12-latin-600.woff2') format('woff2'),
+        url('/fonts/inter-v12-latin-600.woff') format('woff');
+}
+
+/* Critical path CSS for initial render */
+.app-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+    contain: layout style;
+}
+
+/* Optimize scrolling performance */
+.smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Reduce paint complexity */
+.simple-border {
+    border: 1px solid #e5e7eb;
+    /* Avoid complex border styles that cause repaints */
+}
+
+/* Optimize animations */
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive images */
+.responsive-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Grid optimizations */
+.optimized-grid {
+    display: grid;
+    contain: layout;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+/* Table optimizations */
+.optimized-table {
+    table-layout: fixed;
+    contain: layout;
+}
+
+.optimized-table th,
+.optimized-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

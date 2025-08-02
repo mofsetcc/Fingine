@@ -18,12 +18,23 @@ class User(Base, UUIDMixin, TimestampMixin):
     password_hash = Column(String(255), nullable=True)  # Nullable for OAuth-only users
     email_verified_at = Column(String, nullable=True)  # ISO datetime string
     
+    # GDPR compliance fields
+    gdpr_consents = Column(JSONB, nullable=True, default=dict)  # Store consent records
+    is_deleted = Column(Boolean, nullable=False, default=False)  # Soft delete flag
+    deleted_at = Column(String, nullable=True)  # ISO datetime string
+    data_retention_until = Column(String, nullable=True)  # ISO datetime string
+    
     # Relationships
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     oauth_identities = relationship("UserOAuthIdentity", back_populates="user", cascade="all, delete-orphan")
     subscription = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
     watchlist = relationship("UserWatchlist", back_populates="user", cascade="all, delete-orphan")
     api_usage_logs = relationship("APIUsageLog", back_populates="user", cascade="all, delete-orphan")
+    
+    @property
+    def email_verified(self) -> bool:
+        """Check if email is verified."""
+        return self.email_verified_at is not None
 
 
 class UserProfile(Base, TimestampMixin):

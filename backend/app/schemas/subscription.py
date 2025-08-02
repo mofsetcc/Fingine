@@ -160,6 +160,37 @@ class PlanComparison(BaseModel):
     recommended_plan_id: Optional[int] = Field(None, description="Recommended plan ID")
 
 
+# Quota Usage Schemas
+class DailyUsage(BaseModel):
+    """Daily usage statistics."""
+    
+    date: str = Field(..., description="Date in ISO format")
+    api_calls: int = Field(..., description="Number of API calls")
+    ai_analysis_calls: int = Field(..., description="Number of AI analysis calls")
+    avg_response_time_ms: float = Field(..., description="Average response time in milliseconds")
+    total_cost_usd: float = Field(..., description="Total cost in USD")
+
+
+class QuotaUsageSummary(BaseModel):
+    """Quota usage summary for multiple days."""
+    
+    period_days: int = Field(..., description="Number of days in the summary")
+    start_date: str = Field(..., description="Start date in ISO format")
+    end_date: str = Field(..., description="End date in ISO format")
+    current_quotas: Dict[str, int] = Field(..., description="Current daily quotas")
+    usage_by_date: list[DailyUsage] = Field(..., description="Usage statistics by date")
+    total_api_calls: int = Field(..., description="Total API calls in period")
+    total_ai_analysis_calls: int = Field(..., description="Total AI analysis calls in period")
+    total_cost_usd: float = Field(..., description="Total cost in period")
+
+
+class QuotaCheckResult(BaseModel):
+    """Result of quota availability check."""
+    
+    has_quota: bool = Field(..., description="Whether user has quota available")
+    quota_info: Dict[str, Any] = Field(..., description="Detailed quota information")
+
+
 # Subscription Analytics Schema
 class SubscriptionAnalytics(BaseModel):
     """Subscription analytics for admin."""

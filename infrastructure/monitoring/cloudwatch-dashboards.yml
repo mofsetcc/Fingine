@@ -1,0 +1,321 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudWatch Dashboards for Japanese Stock Analysis Platform'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: kessan
+  Environment:
+    Type: String
+    Default: prod
+
+Resources:
+  # Main Application Dashboard
+  ApplicationDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub '${ProjectName}-${Environment}-application'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${ProjectName}-${Environment}-alb" ],
+                  [ ".", "TargetResponseTime", ".", "." ],
+                  [ ".", "HTTPCode_Target_2XX_Count", ".", "." ],
+                  [ ".", "HTTPCode_Target_4XX_Count", ".", "." ],
+                  [ ".", "HTTPCode_Target_5XX_Count", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "Application Load Balancer Metrics",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "${ProjectName}-${Environment}-backend", "ClusterName", "${ProjectName}-${Environment}-cluster" ],
+                  [ ".", "MemoryUtilization", ".", ".", ".", "." ],
+                  [ ".", "CPUUtilization", "ServiceName", "${ProjectName}-${Environment}-frontend", "ClusterName", "${ProjectName}-${Environment}-cluster" ],
+                  [ ".", "MemoryUtilization", ".", ".", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "ECS Service Resource Utilization",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 6,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "${ProjectName}-${Environment}-postgres" ],
+                  [ ".", "DatabaseConnections", ".", "." ],
+                  [ ".", "ReadLatency", ".", "." ],
+                  [ ".", "WriteLatency", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "RDS Database Metrics",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 6,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ElastiCache", "CPUUtilization", "CacheClusterId", "${ProjectName}-${Environment}-redis-001" ],
+                  [ ".", "NetworkBytesIn", ".", "." ],
+                  [ ".", "NetworkBytesOut", ".", "." ],
+                  [ ".", "CurrConnections", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "ElastiCache Redis Metrics",
+                "period": 300
+              }
+            },
+            {
+              "type": "log",
+              "x": 0,
+              "y": 12,
+              "width": 24,
+              "height": 6,
+              "properties": {
+                "query": "SOURCE '/aws/ecs/${ProjectName}-${Environment}/backend'\n| fields @timestamp, @message\n| filter @message like /ERROR/\n| sort @timestamp desc\n| limit 100",
+                "region": "ap-northeast-1",
+                "title": "Recent Backend Errors",
+                "view": "table"
+              }
+            }
+          ]
+        }
+
+  # Business Metrics Dashboard
+  BusinessDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub '${ProjectName}-${Environment}-business'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 8,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "Kessan/Business", "ActiveUsers", { "stat": "Sum" } ],
+                  [ ".", "NewRegistrations", { "stat": "Sum" } ],
+                  [ ".", "UserLogins", { "stat": "Sum" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "User Metrics",
+                "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8,
+              "y": 0,
+              "width": 8,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "Kessan/Business", "AIAnalysisRequests", { "stat": "Sum" } ],
+                  [ ".", "StockSearches", { "stat": "Sum" } ],
+                  [ ".", "WatchlistUpdates", { "stat": "Sum" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "Feature Usage",
+                "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16,
+              "y": 0,
+              "width": 8,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "Kessan/Business", "APICallCost", { "stat": "Sum" } ],
+                  [ ".", "LLMTokensUsed", { "stat": "Sum" } ],
+                  [ ".", "DataSourceCalls", { "stat": "Sum" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "Cost Metrics",
+                "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 6,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "Kessan/Performance", "ResponseTime", "Endpoint", "/api/v1/analysis", { "stat": "Average" } ],
+                  [ "...", "/api/v1/stocks/search", { "stat": "Average" } ],
+                  [ "...", "/api/v1/stocks/{ticker}", { "stat": "Average" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "API Response Times",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 6,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "Kessan/Errors", "APIErrors", "ErrorType", "ValidationError", { "stat": "Sum" } ],
+                  [ "...", "DatabaseError", { "stat": "Sum" } ],
+                  [ "...", "ExternalAPIError", { "stat": "Sum" } ],
+                  [ "...", "InternalError", { "stat": "Sum" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "Error Distribution",
+                "period": 300
+              }
+            }
+          ]
+        }
+
+  # Infrastructure Dashboard
+  InfrastructureDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub '${ProjectName}-${Environment}-infrastructure'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 6,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ECS", "RunningTaskCount", "ServiceName", "${ProjectName}-${Environment}-backend", "ClusterName", "${ProjectName}-${Environment}-cluster" ],
+                  [ ".", "PendingTaskCount", ".", ".", ".", "." ],
+                  [ ".", "RunningTaskCount", "ServiceName", "${ProjectName}-${Environment}-frontend", "ClusterName", "${ProjectName}-${Environment}-cluster" ],
+                  [ ".", "PendingTaskCount", ".", ".", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "ECS Task Counts",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 6,
+              "y": 0,
+              "width": 6,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", "${ProjectName}-${Environment}-postgres" ],
+                  [ ".", "FreeableMemory", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "RDS Storage & Memory",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 0,
+              "width": 6,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ElastiCache", "FreeableMemory", "CacheClusterId", "${ProjectName}-${Environment}-redis-001" ],
+                  [ ".", "SwapUsage", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "ElastiCache Memory",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 18,
+              "y": 0,
+              "width": 6,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ApplicationELB", "ActiveConnectionCount", "LoadBalancer", "${ProjectName}-${Environment}-alb" ],
+                  [ ".", "NewConnectionCount", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-northeast-1",
+                "title": "Load Balancer Connections",
+                "period": 300
+              }
+            }
+          ]
+        }
+
+Outputs:
+  ApplicationDashboardURL:
+    Description: URL of the Application Dashboard
+    Value: !Sub 'https://console.aws.amazon.com/cloudwatch/home?region=ap-northeast-1#dashboards:name=${ProjectName}-${Environment}-application'
+
+  BusinessDashboardURL:
+    Description: URL of the Business Dashboard
+    Value: !Sub 'https://console.aws.amazon.com/cloudwatch/home?region=ap-northeast-1#dashboards:name=${ProjectName}-${Environment}-business'
+
+  InfrastructureDashboardURL:
+    Description: URL of the Infrastructure Dashboard
+    Value: !Sub 'https://console.aws.amazon.com/cloudwatch/home?region=ap-northeast-1#dashboards:name=${ProjectName}-${Environment}-infrastructure'

@@ -4,7 +4,7 @@ Security utilities for authentication and authorization.
 
 import secrets
 from datetime import datetime, timedelta
-from typing import Any, Union, Optional
+from typing import Any, Dict, Tuple, Union, Optional
 
 import bcrypt
 import jwt
@@ -80,8 +80,68 @@ def verify_token(token: str, token_type: str = "access") -> Optional[str]:
             return None
             
         return user_id
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
     except jwt.PyJWTError:
         return None
+
+
+def is_token_expired(token: str) -> bool:
+    """
+    Check if a JWT token is expired.
+    
+    Args:
+        token: The JWT token to check
+        
+    Returns:
+        True if token is expired, False otherwise
+    """
+    try:
+        jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        return False
+    except jwt.ExpiredSignatureError:
+        return True
+    except jwt.PyJWTError:
+        return True
+
+
+def get_token_payload(token: str) -> Optional[Dict[str, Any]]:
+    """
+    Get token payload without verification (for expired tokens).
+    
+    Args:
+        token: The JWT token
+        
+    Returns:
+        Token payload if valid format, None otherwise
+    """
+    try:
+        return jwt.decode(token, options={"verify_signature": False})
+    except jwt.PyJWTError:
+        return None
+
+
+def refresh_access_token(refresh_token: str) -> Optional[Tuple[str, str]]:
+    """
+    Generate new access token using refresh token.
+    
+    Args:
+        refresh_token: Valid refresh token
+        
+    Returns:
+        Tuple of (new_access_token, new_refresh_token) if successful, None otherwise
+    """
+    user_id = verify_token(refresh_token, "refresh")
+    if not user_id:
+        return None
+    
+    # Generate new tokens
+    new_access_token = create_access_token(user_id)
+    new_refresh_token = create_refresh_token(user_id)
+    
+    return new_access_token, new_refresh_token
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

@@ -1,0 +1,1311 @@
+openapi: 3.0.3
+info:
+  title: Project Kessan API
+  description: |
+    AI-Powered Japanese Stock Trend Analysis Platform
+    
+    Project Kessan (決算 - "Financial Results") provides institutional-grade investment analysis 
+    for Japanese stocks through AI-powered insights, real-time data, and comprehensive financial analysis.
+    
+    ## Features
+    - **AI Analysis**: Multi-horizon stock analysis using Google Gemini API
+    - **Real-time Data**: Live stock prices and market indices
+    - **Japanese Focus**: Specialized for Tokyo Stock Exchange (TSE) listed companies
+    - **News & Sentiment**: Japanese language news analysis with sentiment scoring
+    - **Subscription Tiers**: Flexible pricing with quota management
+    - **Watchlist Management**: Personal stock tracking and monitoring
+    
+    ## Authentication
+    The API uses JWT (JSON Web Tokens) for authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## Rate Limits
+    - **Free Tier**: 20 requests/minute (anonymous), 100 requests/minute (authenticated)
+    - **Pro Tier**: 300 requests/minute
+    - **Business Tier**: 1000 requests/minute
+    
+    ## Error Handling
+    The API returns structured error responses with appropriate HTTP status codes:
+    - `400` - Bad Request (validation errors)
+    - `401` - Unauthorized (authentication required)
+    - `403` - Forbidden (insufficient permissions)
+    - `404` - Not Found (resource not found)
+    - `429` - Too Many Requests (rate limit exceeded)
+    - `500` - Internal Server Error
+    
+  version: 1.0.0
+  contact:
+    name: Project Kessan API Support
+    email: support@kessan.ai
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.kessan.ai/api/v1
+    description: Production server
+  - url: https://staging-api.kessan.ai/api/v1
+    description: Staging server
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Health Check Endpoints
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Basic health check
+      description: Returns basic health status of the API
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: kessan-api
+                  version:
+                    type: string
+                    example: 1.0.0
+
+  /health/detailed:
+    get:
+      tags:
+        - Health
+      summary: Detailed health check
+      description: Returns detailed health status including database and Redis connectivity
+      security: []
+      responses:
+        '200':
+          description: Detailed health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedHealthResponse'
+
+  # Authentication Endpoints
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: |
+        Register a new user account with email and password.
+        Sends a verification email upon successful registration.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedResponse'
+        '409':
+          description: User already exists
+        '400':
+          description: Validation error or weak password
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: |
+        Authenticate user with email and password.
+        Returns JWT tokens for API access.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+        '403':
+          description: Email not verified
+
+  /auth/oauth/{provider}:
+    post:
+      tags:
+        - Authentication
+      summary: OAuth login
+      description: |
+        Authenticate user via OAuth provider (Google, LINE).
+        Creates account if user doesn't exist.
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, line]
+          description: OAuth provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthLogin'
+      responses:
+        '200':
+          description: OAuth authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Unsupported provider
+        '401':
+          description: Invalid OAuth token
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: |
+        Refresh access token using refresh token.
+        Requires valid refresh token in Authorization header.
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '401':
+          description: Invalid refresh token
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Get current authenticated user information
+      responses:
+        '200':
+          description: User information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWithProfile'
+        '401':
+          description: Authentication required
+
+  # Stock Endpoints
+  /stocks/search:
+    get:
+      tags:
+        - Stocks
+      summary: Search stocks
+      description: |
+        Search Japanese stocks by ticker symbol or company name with fuzzy matching.
+        Optimized for sub-500ms response times with relevance scoring.
+      security: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+          description: Search query (ticker or company name)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum results to return
+        - name: include_inactive
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include inactive stocks in results
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockSearchResponse'
+        '400':
+          description: Invalid search parameters
+
+  /stocks/market/indices:
+    get:
+      tags:
+        - Stocks
+      summary: Get market indices
+      description: |
+        Get current market indices data (Nikkei 225, TOPIX).
+        Real-time for premium users, 15-minute delay for free users.
+      security: []
+      responses:
+        '200':
+          description: Market indices data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MarketIndex'
+
+  /stocks/market/hot-stocks:
+    get:
+      tags:
+        - Stocks
+      summary: Get hot stocks
+      description: |
+        Get hot stocks data categorized by gainers, losers, and most traded.
+        Updated every 5 minutes during market hours.
+      security: []
+      responses:
+        '200':
+          description: Hot stocks data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotStocksResponse'
+
+  /stocks/{ticker}:
+    get:
+      tags:
+        - Stocks
+      summary: Get stock details
+      description: |
+        Get detailed information for a specific Japanese stock.
+        Includes current price, financial metrics, and company information.
+      security: []
+      parameters:
+        - name: ticker
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+          description: 4-digit Japanese stock ticker (e.g., "7203" for Toyota)
+      responses:
+        '200':
+          description: Stock details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockDetail'
+        '400':
+          description: Invalid ticker format
+        '404':
+          description: Stock not found
+
+  /stocks/{ticker}/price-history:
+    get:
+      tags:
+        - Stocks
+      summary: Get price history
+      description: |
+        Get historical OHLCV (Open, High, Low, Close, Volume) data for technical analysis.
+        Supports various time periods and intervals.
+      security: []
+      parameters:
+        - name: ticker
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+          description: 4-digit Japanese stock ticker
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [1d, 1w, 1m, 3m, 6m, 1y, 2y, 5y]
+            default: 1y
+          description: Time period
+        - name: interval
+          in: query
+          schema:
+            type: string
+            enum: [1m, 5m, 15m, 30m, 1h, 1d]
+            default: 1d
+          description: Data interval
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Custom start date (YYYY-MM-DD)
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Custom end date (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Price history data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceHistoryResponse'
+        '400':
+          description: Invalid parameters
+
+  /stocks/{ticker}/news:
+    get:
+      tags:
+        - Stocks
+      summary: Get stock news
+      description: |
+        Get news articles related to a specific stock with sentiment analysis.
+        Includes Japanese and English sources with relevance scoring.
+      security: []
+      parameters:
+        - name: ticker
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+          description: 4-digit Japanese stock ticker
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum news articles
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+            default: 7
+          description: Days of news history
+        - name: min_relevance
+          in: query
+          schema:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+            default: 0.1
+          description: Minimum relevance score
+      responses:
+        '200':
+          description: Stock news with sentiment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockNewsResponse'
+
+  # AI Analysis Endpoints
+  /analysis/{ticker}/generate:
+    post:
+      tags:
+        - AI Analysis
+      summary: Generate AI analysis
+      description: |
+        Generate comprehensive AI-powered stock analysis using Google Gemini API.
+        Supports multiple analysis types with intelligent caching.
+      parameters:
+        - name: ticker
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+          description: 4-digit Japanese stock ticker
+        - name: analysis_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [short_term, mid_term, long_term, comprehensive]
+          description: Type of analysis to generate
+        - name: force_refresh
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Force new analysis even if cached
+      responses:
+        '200':
+          description: Analysis generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAnalysisResponse'
+        '400':
+          description: Invalid parameters
+        '429':
+          description: Quota exceeded
+
+  /analysis/{ticker}/short-term:
+    get:
+      tags:
+        - AI Analysis
+      summary: Get short-term analysis
+      description: |
+        Generate short-term momentum analysis (1-4 weeks) based on technical indicators.
+        Focuses on trading insights and entry/exit timing.
+      parameters:
+        - name: ticker
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+        - name: force_refresh
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Short-term analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAnalysisResponse'
+
+  # Watchlist Endpoints
+  /watchlist:
+    get:
+      tags:
+        - Watchlist
+      summary: Get user watchlist
+      description: Get current user's watchlist with real-time price data
+      responses:
+        '200':
+          description: User watchlist
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WatchlistStock'
+        '401':
+          description: Authentication required
+
+    post:
+      tags:
+        - Watchlist
+      summary: Add stock to watchlist
+      description: Add a stock to user's watchlist with optional notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WatchlistStockCreate'
+      responses:
+        '201':
+          description: Stock added to watchlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchlistStock'
+        '409':
+          description: Stock already in watchlist
+
+  /watchlist/{ticker}:
+    get:
+      tags:
+        - Watchlist
+      summary: Get watchlist stock
+      description: Get specific stock from user's watchlist
+      parameters:
+        - name: ticker
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+      responses:
+        '200':
+          description: Watchlist stock details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchlistStock'
+        '404':
+          description: Stock not in watchlist
+
+    put:
+      tags:
+        - Watchlist
+      summary: Update watchlist stock
+      description: Update notes for a stock in user's watchlist
+      parameters:
+        - name: ticker
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WatchlistStockUpdate'
+      responses:
+        '200':
+          description: Watchlist stock updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchlistStock'
+
+    delete:
+      tags:
+        - Watchlist
+      summary: Remove stock from watchlist
+      description: Remove a stock from user's watchlist
+      parameters:
+        - name: ticker
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+      responses:
+        '200':
+          description: Stock removed from watchlist
+        '404':
+          description: Stock not in watchlist
+
+  # Subscription Endpoints
+  /subscription/plans:
+    get:
+      tags:
+        - Subscription
+      summary: Get subscription plans
+      description: Get all available subscription plans with features and pricing
+      security: []
+      parameters:
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Return only active plans
+      responses:
+        '200':
+          description: Available subscription plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Plan'
+
+  /subscription/my-subscription:
+    get:
+      tags:
+        - Subscription
+      summary: Get user subscription
+      description: Get current user's subscription information with usage data
+      responses:
+        '200':
+          description: User subscription details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionWithUsage'
+        '401':
+          description: Authentication required
+
+  /subscription/upgrade:
+    post:
+      tags:
+        - Subscription
+      summary: Upgrade subscription
+      description: Upgrade user's subscription to a higher plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionUpgrade'
+      responses:
+        '200':
+          description: Subscription upgraded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '400':
+          description: Invalid upgrade request
+
+  # User Management Endpoints
+  /users/profile:
+    get:
+      tags:
+        - Users
+      summary: Get user profile
+      description: Get current user's profile information
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWithProfile'
+        '401':
+          description: Authentication required
+
+    put:
+      tags:
+        - Users
+      summary: Update user profile
+      description: Update current user's profile information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Authentication Schemas
+    UserRegistration:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+        password:
+          type: string
+          minLength: 8
+          description: Password (minimum 8 characters)
+        display_name:
+          type: string
+          maxLength: 50
+          description: Optional display name
+
+    UserLogin:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        remember_me:
+          type: boolean
+          default: false
+          description: Extended session duration
+
+    OAuthLogin:
+      type: object
+      required:
+        - access_token
+      properties:
+        access_token:
+          type: string
+          description: OAuth access token
+        provider:
+          type: string
+          enum: [google, line]
+          description: OAuth provider (set automatically)
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        access_token:
+          type: string
+          description: JWT access token
+        refresh_token:
+          type: string
+          description: JWT refresh token
+        token_type:
+          type: string
+          example: bearer
+        expires_in:
+          type: integer
+          description: Token expiration in seconds
+
+    AuthToken:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: bearer
+        expires_in:
+          type: integer
+
+    # User Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        email_verified:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        timezone:
+          type: string
+          default: Asia/Tokyo
+        notification_preferences:
+          type: object
+          additionalProperties: true
+
+    UserWithProfile:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            profile:
+              $ref: '#/components/schemas/UserProfile'
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        display_name:
+          type: string
+          maxLength: 50
+        avatar_url:
+          type: string
+          format: uri
+        timezone:
+          type: string
+        notification_preferences:
+          type: object
+          additionalProperties: true
+
+    # Stock Schemas
+    Stock:
+      type: object
+      properties:
+        ticker:
+          type: string
+          pattern: '^[0-9]{4}$'
+          description: 4-digit Japanese stock ticker
+        company_name_jp:
+          type: string
+          description: Company name in Japanese
+        company_name_en:
+          type: string
+          description: Company name in English
+        sector_jp:
+          type: string
+          description: Sector in Japanese
+        industry_jp:
+          type: string
+          description: Industry in Japanese
+        description:
+          type: string
+          description: Company description
+        is_active:
+          type: boolean
+          description: Whether stock is actively traded
+
+    StockDetail:
+      allOf:
+        - $ref: '#/components/schemas/Stock'
+        - type: object
+          properties:
+            current_price:
+              type: number
+              format: float
+              description: Current stock price in JPY
+            price_change:
+              type: number
+              format: float
+              description: Price change from previous close
+            price_change_percent:
+              type: number
+              format: float
+              description: Percentage change from previous close
+            volume:
+              type: integer
+              description: Current trading volume
+            market_cap:
+              type: integer
+              description: Market capitalization in JPY
+            pe_ratio:
+              type: number
+              format: float
+              description: Price-to-earnings ratio
+            pb_ratio:
+              type: number
+              format: float
+              description: Price-to-book ratio
+            dividend_yield:
+              type: number
+              format: float
+              description: Dividend yield percentage
+            week_52_high:
+              type: number
+              format: float
+              description: 52-week high price
+            week_52_low:
+              type: number
+              format: float
+              description: 52-week low price
+
+    StockSearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Original search query
+        results:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Stock'
+              - type: object
+                properties:
+                  relevance_score:
+                    type: number
+                    format: float
+                    minimum: 0.0
+                    maximum: 1.0
+                    description: Search relevance score
+        total_results:
+          type: integer
+          description: Total number of matching results
+        response_time_ms:
+          type: integer
+          description: Query response time in milliseconds
+
+    MarketIndex:
+      type: object
+      properties:
+        symbol:
+          type: string
+          description: Index symbol (e.g., N225, TOPIX)
+        name:
+          type: string
+          description: Index name
+        value:
+          type: number
+          format: float
+          description: Current index value
+        change:
+          type: number
+          format: float
+          description: Change from previous close
+        change_percent:
+          type: number
+          format: float
+          description: Percentage change
+        last_updated:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    HotStocksResponse:
+      type: object
+      properties:
+        gainers:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockDetail'
+          description: Top gaining stocks
+        losers:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockDetail'
+          description: Top losing stocks
+        most_traded:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockDetail'
+          description: Most traded stocks
+        last_updated:
+          type: string
+          format: date-time
+
+    PriceHistoryResponse:
+      type: object
+      properties:
+        ticker:
+          type: string
+        period:
+          type: string
+        interval:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date-time
+              open:
+                type: number
+                format: float
+              high:
+                type: number
+                format: float
+              low:
+                type: number
+                format: float
+              close:
+                type: number
+                format: float
+              volume:
+                type: integer
+              adjusted_close:
+                type: number
+                format: float
+
+    StockNewsResponse:
+      type: object
+      properties:
+        ticker:
+          type: string
+        articles:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              headline:
+                type: string
+              content_summary:
+                type: string
+              source:
+                type: string
+              published_at:
+                type: string
+                format: date-time
+              sentiment_label:
+                type: string
+                enum: [positive, negative, neutral]
+              sentiment_score:
+                type: number
+                format: float
+                minimum: -1.0
+                maximum: 1.0
+              relevance_score:
+                type: number
+                format: float
+                minimum: 0.0
+                maximum: 1.0
+        sentiment_summary:
+          type: object
+          properties:
+            overall_sentiment:
+              type: string
+              enum: [positive, negative, neutral]
+            positive_count:
+              type: integer
+            negative_count:
+              type: integer
+            neutral_count:
+              type: integer
+            average_sentiment_score:
+              type: number
+              format: float
+
+    # AI Analysis Schemas
+    AIAnalysisResponse:
+      type: object
+      properties:
+        ticker:
+          type: string
+        analysis_type:
+          type: string
+          enum: [short_term, mid_term, long_term, comprehensive]
+        analysis:
+          type: object
+          properties:
+            rating:
+              type: string
+              enum: [Strong Bullish, Bullish, Neutral, Bearish, Strong Bearish]
+            confidence:
+              type: number
+              format: float
+              minimum: 0.0
+              maximum: 1.0
+            key_factors:
+              type: array
+              items:
+                type: string
+            price_target_range:
+              type: object
+              properties:
+                min:
+                  type: number
+                  format: float
+                max:
+                  type: number
+                  format: float
+            risk_factors:
+              type: array
+              items:
+                type: string
+            reasoning:
+              type: string
+            generated_at:
+              type: string
+              format: date-time
+            model_version:
+              type: string
+
+    # Watchlist Schemas
+    WatchlistStock:
+      allOf:
+        - $ref: '#/components/schemas/StockDetail'
+        - type: object
+          properties:
+            added_at:
+              type: string
+              format: date-time
+            notes:
+              type: string
+              description: User notes for the stock
+
+    WatchlistStockCreate:
+      type: object
+      required:
+        - ticker
+      properties:
+        ticker:
+          type: string
+          pattern: '^[0-9]{4}$'
+        notes:
+          type: string
+          maxLength: 500
+
+    WatchlistStockUpdate:
+      type: object
+      properties:
+        notes:
+          type: string
+          maxLength: 500
+
+    # Subscription Schemas
+    Plan:
+      type: object
+      properties:
+        id:
+          type: integer
+        plan_name:
+          type: string
+          enum: [free, pro, business]
+        price_monthly:
+          type: integer
+          description: Price in Japanese Yen
+        features:
+          type: object
+          additionalProperties: true
+        api_quota_daily:
+          type: integer
+        ai_analysis_quota_daily:
+          type: integer
+        is_active:
+          type: boolean
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        plan_id:
+          type: integer
+        status:
+          type: string
+          enum: [active, inactive, cancelled, expired]
+        current_period_start:
+          type: string
+          format: date-time
+        current_period_end:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    SubscriptionWithUsage:
+      allOf:
+        - $ref: '#/components/schemas/Subscription'
+        - type: object
+          properties:
+            plan:
+              $ref: '#/components/schemas/Plan'
+            usage_quota:
+              type: object
+              properties:
+                api_usage_today:
+                  type: integer
+                ai_analysis_usage_today:
+                  type: integer
+                api_quota_daily:
+                  type: integer
+                ai_analysis_quota_daily:
+                  type: integer
+
+    SubscriptionUpgrade:
+      type: object
+      required:
+        - plan_id
+      properties:
+        plan_id:
+          type: integer
+          description: Target plan ID to upgrade to
+
+    # Response Schemas
+    APIResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+
+    CreatedResponse:
+      allOf:
+        - $ref: '#/components/schemas/APIResponse'
+        - type: object
+          properties:
+            resource_id:
+              type: string
+              description: ID of created resource
+
+    DetailedHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        service:
+          type: string
+        version:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        checks:
+          type: object
+          properties:
+            database:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, unhealthy]
+                response_time_ms:
+                  type: integer
+            redis:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, unhealthy]
+                response_time_ms:
+                  type: integer
+            external_apis:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, unhealthy]
+                  response_time_ms:
+                    type: integer
+
+tags:
+  - name: Health
+    description: Health check and system status endpoints
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Stocks
+    description: Stock data, search, and market information
+  - name: AI Analysis
+    description: AI-powered stock analysis and insights
+  - name: Watchlist
+    description: Personal stock watchlist management
+  - name: Subscription
+    description: Subscription plans and billing management
+  - name: Users
+    description: User profile and account management

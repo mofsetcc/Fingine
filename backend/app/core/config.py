@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     DATABASE_POOL_SIZE: int = 10
     DATABASE_MAX_OVERFLOW: int = 20
+    DATABASE_POOL_TIMEOUT: int = 30
+    DATABASE_POOL_RECYCLE: int = 3600
+    DATABASE_QUERY_TIMEOUT: int = 60
+    DATABASE_SLOW_QUERY_THRESHOLD: float = 0.1  # 100ms
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
@@ -66,6 +70,22 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
     RATE_LIMIT_PER_HOUR: int = 1000
+    
+    # Alerting
+    SLACK_WEBHOOK_URL: Optional[str] = None
+    PAGERDUTY_INTEGRATION_KEY: Optional[str] = None
+    ENABLE_ERROR_ALERTING: bool = True
+    ENABLE_GRACEFUL_DEGRADATION: bool = True
+    
+    # Datadog APM
+    DD_SERVICE: str = "kessan-backend"
+    DD_ENV: Optional[str] = None
+    DD_VERSION: str = "1.0.0"
+    DD_TRACE_ENABLED: bool = False
+    DD_AGENT_HOST: Optional[str] = None
+    DD_TRACE_AGENT_PORT: int = 8126
+    DD_LOGS_INJECTION: bool = True
+    DD_PROFILING_ENABLED: bool = False
     
     @validator("CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v):

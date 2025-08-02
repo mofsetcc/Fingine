@@ -507,6 +507,7 @@ async def update_user_preferences(
 
 @router.get("/subscription", response_model=APIResponse[dict])
 async def get_user_subscription(
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ) -> APIResponse[dict]:
     """
@@ -515,19 +516,39 @@ async def get_user_subscription(
     Returns current subscription plan, usage, and billing information.
     """
     try:
-        # TODO: Implement subscription retrieval
-        subscription_info = {
-            "plan": "free",
-            "status": "active",
-            "usage": {
-                "api_calls_today": 0,
-                "ai_analysis_today": 0
-            },
-            "limits": {
-                "api_calls_daily": 10,
-                "ai_analysis_daily": 5
+        from app.services.subscription_service import SubscriptionService
+        
+        service = SubscriptionService(db)
+        subscription = await service.get_subscription_with_usage(current_user.id)
+        
+        if subscription:
+            subscription_info = {
+                "plan": subscription.plan.plan_name if subscription.plan else "free",
+                "status": subscription.status,
+                "usage": {
+                    "api_calls_today": subscription.usage_quota.api_usage_today,
+                    "ai_analysis_today": subscription.usage_quota.ai_analysis_usage_today
+                },
+                "limits": {
+                    "api_calls_daily": subscription.usage_quota.api_quota_daily,
+                    "ai_analysis_daily": subscription.usage_quota.ai_analysis_quota_daily
+                }
             }
-        }
+        else:
+            # Default free tier for users without subscription
+            usage_quota = await service.get_user_usage_quota(current_user.id)
+            subscription_info = {
+                "plan": "free",
+                "status": "active",
+                "usage": {
+                    "api_calls_today": usage_quota.api_usage_today,
+                    "ai_analysis_today": usage_quota.ai_analysis_usage_today
+                },
+                "limits": {
+                    "api_calls_daily": usage_quota.api_quota_daily,
+                    "ai_analysis_daily": usage_quota.ai_analysis_quota_daily
+                }
+            }
         
         return APIResponse(
             success=True,

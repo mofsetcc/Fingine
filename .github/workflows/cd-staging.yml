@@ -1,0 +1,130 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-1.amazonaws.com
+  PROJECT_NAME: kessan
+  ENVIRONMENT: staging
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile
+        push: true
+        tags: |
+          ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-backend:staging-${{ github.sha }}
+          ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-backend:staging-latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile
+        push: true
+        tags: |
+          ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-frontend:staging-${{ github.sha }}
+          ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-frontend:staging-latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          REACT_APP_API_URL=https://staging-api.kessan.example.com
+
+    - name: Scan backend image for vulnerabilities
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-backend:staging-${{ github.sha }}
+        format: 'sarif'
+        output: 'backend-trivy-results.sarif'
+
+    - name: Scan frontend image for vulnerabilities
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.ECR_REGISTRY }}/${{ env.PROJECT_NAME }}-frontend:staging-${{ github.sha }}
+        format: 'sarif'
+        output: 'frontend-trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'backend-trivy-results.sarif'
+
+    - name: Deploy to ECS
+      run: |
+        # Update backend service
+        aws ecs update-service \
+          --cluster ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-cluster \
+          --service ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-backend \
+          --task-definition ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-backend \
+          --force-new-deployment
+
+        # Update frontend service
+        aws ecs update-service \
+          --cluster ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-cluster \
+          --service ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-frontend \
+          --task-definition ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-frontend \
+          --force-new-deployment
+
+    - name: Wait for deployment to complete
+      run: |
+        # Wait for backend service to stabilize
+        aws ecs wait services-stable \
+          --cluster ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-cluster \
+          --services ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-backend
+
+        # Wait for frontend service to stabilize
+        aws ecs wait services-stable \
+          --cluster ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-cluster \
+          --services ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT }}-frontend
+
+    - name: Run smoke tests
+      run: |
+        # Wait a bit for services to be fully ready
+        sleep 30
+        
+        # Test backend health endpoint
+        curl -f https://staging-api.kessan.example.com/health || exit 1
+        
+        # Test frontend
+        curl -f https://staging.kessan.example.com || exit 1
+
+    - name: Notify deployment status
+      uses: 8398a7/action-slack@v3
+      if: always()
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
