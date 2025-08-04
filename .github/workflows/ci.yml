@@ -63,8 +63,8 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then
           echo "📦 Installing from requirements.txt..."
-          # Validate requirements.txt first
-          python ../scripts/validate-requirements.py requirements.txt || echo "⚠️ Requirements validation failed, continuing anyway"
+          # Validate and fix requirements.txt first
+          python ../scripts/validate-requirements.py requirements.txt --fix || echo "⚠️ Requirements validation/fix failed, continuing anyway"
           
           # Install with retry logic
           if ! pip install -r requirements.txt; then
