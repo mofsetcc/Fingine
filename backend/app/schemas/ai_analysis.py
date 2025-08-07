@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.base import BaseSchema, TimestampSchema, UUIDSchema, PaginatedResponse
 
@@ -18,7 +18,8 @@ class AIAnalysisRequest(BaseModel):
     parameters: Optional[Dict[str, Any]] = Field(None, description="Analysis parameters")
     language: str = Field("ja", description="Response language (ja, en)")
     
-    @validator('analysis_type')
+    @field_validator('analysis_type')
+    @classmethod
     def validate_analysis_type(cls, v):
         """Validate analysis type."""
         valid_types = [
@@ -30,7 +31,8 @@ class AIAnalysisRequest(BaseModel):
             raise ValueError(f'Analysis type must be one of: {", ".join(valid_types)}')
         return v
     
-    @validator('language')
+    @field_validator('language')
+    @classmethod
     def validate_language(cls, v):
         """Validate language code."""
         if v not in ['ja', 'en']:
@@ -46,14 +48,16 @@ class BulkAnalysisRequest(BaseModel):
     parameters: Optional[Dict[str, Any]] = Field(None, description="Analysis parameters")
     language: str = Field("ja", description="Response language (ja, en)")
     
-    @validator('tickers')
+    @field_validator('tickers')
+    @classmethod
     def validate_tickers(cls, v):
         """Validate ticker list."""
         if len(set(v)) != len(v):
             raise ValueError('Duplicate tickers are not allowed')
         return v
     
-    @validator('analysis_type')
+    @field_validator('analysis_type')
+    @classmethod
     def validate_analysis_type(cls, v):
         """Validate analysis type."""
         valid_types = [
@@ -76,7 +80,8 @@ class AIAnalysisBase(BaseModel):
     language: str = Field(..., description="Response language")
     user_id: UUID = Field(..., description="User who requested analysis")
     
-    @validator('status')
+    @field_validator('status')
+    @classmethod
     def validate_status(cls, v):
         """Validate analysis status."""
         if v not in ['pending', 'processing', 'completed', 'failed']:
@@ -132,7 +137,8 @@ class TechnicalAnalysisResult(BaseModel):
     medium_term_outlook: str = Field(..., description="Medium-term outlook")
     key_levels: Dict[str, float] = Field(..., description="Key price levels")
     
-    @validator('overall_signal')
+    @field_validator('overall_signal')
+    @classmethod
     def validate_signal(cls, v):
         """Validate technical signal."""
         if v not in ['strong_buy', 'buy', 'hold', 'sell', 'strong_sell']:
@@ -153,7 +159,8 @@ class SentimentAnalysisResult(BaseModel):
     sentiment_drivers: List[str] = Field(..., description="Main sentiment drivers")
     summary: str = Field(..., description="Sentiment summary")
     
-    @validator('overall_sentiment')
+    @field_validator('overall_sentiment')
+    @classmethod
     def validate_sentiment(cls, v):
         """Validate sentiment."""
         if v not in ['very_positive', 'positive', 'neutral', 'negative', 'very_negative']:
@@ -175,7 +182,8 @@ class RiskAssessmentResult(BaseModel):
     risk_mitigation: List[str] = Field(..., description="Risk mitigation strategies")
     summary: str = Field(..., description="Risk assessment summary")
     
-    @validator('overall_risk_level')
+    @field_validator('overall_risk_level')
+    @classmethod
     def validate_risk_level(cls, v):
         """Validate risk level."""
         if v not in ['very_low', 'low', 'moderate', 'high', 'very_high']:
@@ -197,7 +205,8 @@ class PricePredictionResult(BaseModel):
     risks_to_prediction: List[str] = Field(..., description="Risks to prediction")
     summary: str = Field(..., description="Prediction summary")
     
-    @validator('prediction_horizon')
+    @field_validator('prediction_horizon')
+    @classmethod
     def validate_horizon(cls, v):
         """Validate prediction horizon."""
         if v not in ['1_week', '1_month', '3_months', '6_months', '1_year']:
@@ -248,7 +257,8 @@ class AnalysisExportRequest(BaseModel):
     include_charts: bool = Field(True, description="Include charts in export")
     language: str = Field("ja", description="Export language")
     
-    @validator('format')
+    @field_validator('format')
+    @classmethod
     def validate_format(cls, v):
         """Validate export format."""
         if v not in ['pdf', 'excel', 'csv', 'json']:
@@ -265,7 +275,8 @@ class AnalysisExportResponse(BaseModel):
     created_at: datetime = Field(..., description="Export creation time")
     expires_at: Optional[datetime] = Field(None, description="Download expiration time")
     
-    @validator('status')
+    @field_validator('status')
+    @classmethod
     def validate_status(cls, v):
         """Validate export status."""
         if v not in ['pending', 'processing', 'completed', 'failed', 'expired']:

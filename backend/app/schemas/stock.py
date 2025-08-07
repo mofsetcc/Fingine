@@ -4,7 +4,7 @@ from datetime import date as Date, datetime
 from typing import Optional, List, Dict, Any
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.base import BaseSchema, TimestampSchema
 
@@ -23,7 +23,8 @@ class StockBase(BaseModel):
     listing_date: Optional[Date] = Field(None, description="Stock listing date")
     is_active: bool = Field(True, description="Whether stock is actively traded")
     
-    @validator('ticker')
+    @field_validator('ticker')
+    @classmethod
     def validate_ticker(cls, v):
         """Validate ticker format."""
         if not v.isdigit() or len(v) != 4:
@@ -52,8 +53,7 @@ class StockUpdate(BaseModel):
 class Stock(StockBase, TimestampSchema):
     """Stock response schema."""
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # Stock Price Schemas
@@ -69,7 +69,8 @@ class PriceDataBase(BaseModel):
     volume: int = Field(..., ge=0, description="Trading volume")
     adjusted_close: Optional[Decimal] = Field(None, description="Adjusted closing price")
     
-    @validator('open_price', 'high_price', 'low_price', 'close_price', 'adjusted_close')
+    @field_validator('open_price', 'high_price', 'low_price', 'close_price', 'adjusted_close')
+    @classmethod
     def validate_prices(cls, v):
         """Validate price values."""
         if v is not None and v <= 0:
@@ -85,8 +86,7 @@ class PriceDataCreate(PriceDataBase):
 class PriceData(PriceDataBase):
     """Price data response schema."""
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
     
     @property
     def change(self) -> Decimal:
@@ -142,7 +142,8 @@ class PriceHistoryRequest(BaseModel):
     period: str = Field("1y", description="Time period (1d, 1w, 1m, 3m, 6m, 1y, 2y, 5y)")
     interval: str = Field("1d", description="Data interval (1m, 5m, 15m, 30m, 1h, 1d)")
     
-    @validator('period')
+    @field_validator('period')
+    @classmethod
     def validate_period(cls, v):
         """Validate period format."""
         valid_periods = ['1d', '1w', '1m', '3m', '6m', '1y', '2y', '5y', 'max']
@@ -150,7 +151,8 @@ class PriceHistoryRequest(BaseModel):
             raise ValueError(f'Period must be one of: {", ".join(valid_periods)}')
         return v
     
-    @validator('interval')
+    @field_validator('interval')
+    @classmethod
     def validate_interval(cls, v):
         """Validate interval format."""
         valid_intervals = ['1m', '5m', '15m', '30m', '1h', '1d', '1w', '1mo']
@@ -221,8 +223,7 @@ class StockDailyMetricsCreate(StockDailyMetricsBase):
 class StockDailyMetrics(StockDailyMetricsBase):
     """Daily metrics response schema."""
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # Market Index Schemas
@@ -250,7 +251,8 @@ class HotStock(BaseModel):
     volume: int = Field(..., description="Trading volume")
     category: str = Field(..., description="Category (gainer/loser/most_traded)")
     
-    @validator('category')
+    @field_validator('category')
+    @classmethod
     def validate_category(cls, v):
         """Validate hot stock category."""
         if v not in ['gainer', 'loser', 'most_traded']:
@@ -314,7 +316,8 @@ class BatchPriceRequest(BaseModel):
     
     tickers: List[str] = Field(..., min_items=1, max_items=50, description="Stock tickers")
     
-    @validator('tickers')
+    @field_validator('tickers')
+    @classmethod
     def validate_tickers(cls, v):
         """Validate ticker list."""
         for ticker in v:

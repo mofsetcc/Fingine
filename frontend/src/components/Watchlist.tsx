@@ -4,6 +4,7 @@ import {
     addStockToWatchlist,
     clearError,
     fetchWatchlist,
+    fetchRealTimePrices,
     removeStockFromWatchlist,
     updateWatchlistStock
 } from '../store/slices/watchlistSlice';

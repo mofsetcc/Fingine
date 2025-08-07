@@ -159,8 +159,8 @@ class HealthCheckResponse(BaseModel):
     uptime: float = Field(..., description="Service uptime in seconds")
     checks: Dict[str, Dict[str, Any]] = Field(..., description="Individual health checks")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "status": "healthy",
                 "timestamp": "2024-01-01T00:00:00Z",
@@ -185,6 +185,7 @@ class HealthCheckResponse(BaseModel):
                 }
             }
         }
+    }
 
 
 # Batch Operation Response Schemas

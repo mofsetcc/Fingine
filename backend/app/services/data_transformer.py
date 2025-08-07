@@ -15,7 +15,7 @@ from app.models.stock import Stock, StockPriceHistory, StockDailyMetrics
 from app.models.financial import FinancialReport, FinancialReportLineItem
 from app.models.news import NewsArticle, StockNewsLink
 from app.services.stock_service import StockService
-from app.services.news_service import NewsService
+from app.services.news_service import NewsCollectionService
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +198,7 @@ class DataTransformer:
         """Initialize data transformer."""
         self.db = db
         self.stock_service = StockService(db) if db else None
-        self.news_service = NewsService(db) if db else None
+        self.news_service = NewsCollectionService(db) if db else None
         self.indicator_calc = TechnicalIndicatorCalculator()
     
     async def prepare_analysis_context(

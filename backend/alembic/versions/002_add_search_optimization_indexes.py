@@ -19,56 +19,16 @@ depends_on = None
 def upgrade() -> None:
     """Add indexes optimized for stock search functionality."""
     
-    # Full-text search indexes for company names
-    op.execute("""
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_stocks_company_name_jp_gin 
-        ON stocks USING gin(to_tsvector('japanese', company_name_jp))
-    """)
+    # Basic search indexes for development (simplified)
+    op.create_index('idx_stocks_company_name_jp', 'stocks', ['company_name_jp'])
+    op.create_index('idx_stocks_company_name_en', 'stocks', ['company_name_en'])
     
-    op.execute("""
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_stocks_company_name_en_gin 
-        ON stocks USING gin(to_tsvector('english', coalesce(company_name_en, '')))
-        WHERE company_name_en IS NOT NULL
-    """)
+    # Basic indexes for development (trigram indexes commented out)
+    # op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
     
-    # Trigram indexes for fuzzy matching
-    op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
-    
-    op.create_index(
-        'idx_stocks_company_name_jp_trgm',
-        'stocks',
-        ['company_name_jp'],
-        postgresql_using='gin',
-        postgresql_ops={'company_name_jp': 'gin_trgm_ops'}
-    )
-    
-    op.create_index(
-        'idx_stocks_company_name_en_trgm',
-        'stocks',
-        ['company_name_en'],
-        postgresql_using='gin',
-        postgresql_ops={'company_name_en': 'gin_trgm_ops'},
-        postgresql_where=sa.text('company_name_en IS NOT NULL')
-    )
-    
-    # Sector and industry search indexes
-    op.create_index(
-        'idx_stocks_sector_trgm',
-        'stocks',
-        ['sector_jp'],
-        postgresql_using='gin',
-        postgresql_ops={'sector_jp': 'gin_trgm_ops'},
-        postgresql_where=sa.text('sector_jp IS NOT NULL')
-    )
-    
-    op.create_index(
-        'idx_stocks_industry_trgm',
-        'stocks',
-        ['industry_jp'],
-        postgresql_using='gin',
-        postgresql_ops={'industry_jp': 'gin_trgm_ops'},
-        postgresql_where=sa.text('industry_jp IS NOT NULL')
-    )
+    # Basic sector and industry indexes
+    op.create_index('idx_stocks_sector_jp', 'stocks', ['sector_jp'])
+    op.create_index('idx_stocks_industry_jp', 'stocks', ['industry_jp'])
     
     # Ticker prefix search optimization
     op.create_index(
@@ -124,11 +84,9 @@ def downgrade() -> None:
     op.drop_index('idx_price_history_latest_by_ticker', table_name='stock_price_history')
     op.drop_index('idx_stocks_active_search', table_name='stocks')
     op.drop_index('idx_stocks_ticker_prefix', table_name='stocks')
-    op.drop_index('idx_stocks_industry_trgm', table_name='stocks')
-    op.drop_index('idx_stocks_sector_trgm', table_name='stocks')
-    op.drop_index('idx_stocks_company_name_en_trgm', table_name='stocks')
-    op.drop_index('idx_stocks_company_name_jp_trgm', table_name='stocks')
+    op.drop_index('idx_stocks_industry_jp', table_name='stocks')
+    op.drop_index('idx_stocks_sector_jp', table_name='stocks')
     
-    # Drop full-text search indexes
-    op.execute("DROP INDEX CONCURRENTLY IF EXISTS idx_stocks_company_name_en_gin")
-    op.execute("DROP INDEX CONCURRENTLY IF EXISTS idx_stocks_company_name_jp_gin")
+    # Drop basic search indexes
+    op.drop_index('idx_stocks_company_name_en', table_name='stocks')
+    op.drop_index('idx_stocks_company_name_jp', table_name='stocks')

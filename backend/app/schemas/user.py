@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.schemas.base import BaseSchema, TimestampSchema, UUIDSchema
 
@@ -19,7 +19,8 @@ class UserRegistration(BaseModel):
     password: str = Field(..., min_length=8, max_length=128, description="User password")
     display_name: Optional[str] = Field(None, max_length=50, description="Display name")
     
-    @validator("password")
+    @field_validator("password")
+    @classmethod
     def validate_password(cls, v):
         """Validate password strength."""
         if len(v) < 8:
@@ -52,7 +53,8 @@ class PasswordResetConfirm(BaseModel):
     token: str = Field(..., description="Password reset token")
     new_password: str = Field(..., min_length=8, max_length=128, description="New password")
     
-    @validator("new_password")
+    @field_validator("new_password")
+    @classmethod
     def validate_password(cls, v):
         """Validate password strength."""
         if len(v) < 8:
@@ -117,8 +119,7 @@ class User(UserBase, UUIDSchema, TimestampSchema):
     
     email_verified_at: Optional[datetime] = Field(None, description="Email verification timestamp")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # User Profile Schemas
@@ -151,8 +152,7 @@ class UserProfile(UserProfileBase, TimestampSchema):
     
     user_id: UUID = Field(..., description="User ID")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # OAuth Identity Schemas
@@ -174,8 +174,7 @@ class UserOAuthIdentity(UserOAuthIdentityBase, TimestampSchema):
     
     user_id: UUID = Field(..., description="User ID")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # Combined User Response Schemas
@@ -215,7 +214,8 @@ class PasswordChange(BaseModel):
     current_password: str = Field(..., description="Current password")
     new_password: str = Field(..., min_length=8, max_length=128, description="New password")
     
-    @validator("new_password")
+    @field_validator("new_password")
+    @classmethod
     def validate_password(cls, v):
         """Validate password strength."""
         if len(v) < 8:
@@ -234,7 +234,8 @@ class PasswordSet(BaseModel):
     
     new_password: str = Field(..., min_length=8, max_length=128, description="New password")
     
-    @validator("new_password")
+    @field_validator("new_password")
+    @classmethod
     def validate_password(cls, v):
         """Validate password strength."""
         if len(v) < 8:

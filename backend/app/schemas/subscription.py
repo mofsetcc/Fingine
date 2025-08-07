@@ -44,8 +44,7 @@ class Plan(PlanBase, TimestampSchema):
     
     id: int = Field(..., description="Plan ID")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # Subscription Schemas
@@ -85,8 +84,7 @@ class Subscription(SubscriptionBase, UUIDSchema, TimestampSchema):
     user_id: UUID = Field(..., description="User ID")
     plan: Optional[Plan] = Field(None, description="Associated plan")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # Subscription Management Schemas
@@ -201,5 +199,4 @@ class SubscriptionAnalytics(BaseModel):
     churn_rate: float = Field(..., description="Monthly churn rate")
     plan_distribution: Dict[str, int] = Field(..., description="Subscribers per plan")
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

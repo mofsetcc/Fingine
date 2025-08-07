@@ -5,7 +5,7 @@ from typing import Optional, List, Dict, Any
 from uuid import UUID
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.base import BaseSchema, TimestampSchema, UUIDSchema, PaginatedResponse
 from app.schemas.stock import Stock
@@ -76,7 +76,8 @@ class WatchlistBase(BaseModel):
     is_public: bool = Field(False, description="Whether watchlist is public")
     color: Optional[str] = Field(None, max_length=7, description="Watchlist color (hex)")
     
-    @validator('color')
+    @field_validator('color')
+    @classmethod
     def validate_color(cls, v):
         """Validate hex color format."""
         if v is not None:
@@ -102,7 +103,8 @@ class WatchlistUpdate(BaseModel):
     is_public: Optional[bool] = Field(None, description="Whether watchlist is public")
     color: Optional[str] = Field(None, max_length=7, description="Watchlist color (hex)")
     
-    @validator('color')
+    @field_validator('color')
+    @classmethod
     def validate_color(cls, v):
         """Validate hex color format."""
         if v is not None:
@@ -141,14 +143,16 @@ class WatchlistStockBase(BaseModel):
     alert_volume_above: Optional[int] = Field(None, description="Alert when volume goes above")
     alert_enabled: bool = Field(True, description="Whether alerts are enabled")
     
-    @validator('target_price', 'stop_loss_price', 'alert_price_above', 'alert_price_below')
+    @field_validator('target_price', 'stop_loss_price', 'alert_price_above', 'alert_price_below')
+    @classmethod
     def validate_positive_prices(cls, v):
         """Validate that prices are positive."""
         if v is not None and v <= 0:
             raise ValueError('Price must be positive')
         return v
     
-    @validator('alert_volume_above')
+    @field_validator('alert_volume_above')
+    @classmethod
     def validate_positive_volume(cls, v):
         """Validate that volume is positive."""
         if v is not None and v <= 0:
@@ -206,7 +210,8 @@ class WatchlistAlertBase(BaseModel):
     message: str = Field(..., description="Alert message")
     is_read: bool = Field(False, description="Whether alert has been read")
     
-    @validator('alert_type')
+    @field_validator('alert_type')
+    @classmethod
     def validate_alert_type(cls, v):
         """Validate alert type."""
         valid_types = ['price_above', 'price_below', 'volume_above', 'target_reached', 'stop_loss_hit']
@@ -291,7 +296,8 @@ class WatchlistImportRequest(BaseModel):
     tickers: List[str] = Field(..., min_items=1, max_items=500, description="Stock tickers to import")
     source: Optional[str] = Field(None, description="Import source")
     
-    @validator('tickers')
+    @field_validator('tickers')
+    @classmethod
     def validate_tickers(cls, v):
         """Validate ticker list."""
         if len(set(v)) != len(v):
@@ -307,7 +313,8 @@ class WatchlistExportRequest(BaseModel):
     include_notes: bool = Field(True, description="Include user notes")
     include_alerts: bool = Field(True, description="Include alert settings")
     
-    @validator('format')
+    @field_validator('format')
+    @classmethod
     def validate_format(cls, v):
         """Validate export format."""
         if v not in ['csv', 'excel', 'json']:
@@ -333,7 +340,8 @@ class BulkWatchlistStockOperation(BaseModel):
     watchlist_id: UUID = Field(..., description="Target watchlist ID")
     tickers: List[str] = Field(..., min_items=1, max_items=100, description="Stock tickers")
     
-    @validator('operation')
+    @field_validator('operation')
+    @classmethod
     def validate_operation(cls, v):
         """Validate operation type."""
         if v not in ['add', 'remove', 'move', 'copy']:

@@ -9,6 +9,7 @@ from enum import Enum
 import structlog
 
 from sqlalchemy.orm import Session
+from fastapi import Depends
 from app.core.database import get_db
 from app.models.user import User
 from app.models.logs import APIUsageLog
@@ -502,8 +503,6 @@ class GDPRComplianceManager:
             }
 
 
-def get_gdpr_manager(db: Session = None) -> GDPRComplianceManager:
+def get_gdpr_manager(db: Session = Depends(get_db)) -> GDPRComplianceManager:
     """Get GDPR compliance manager instance."""
-    if db is None:
-        db = next(get_db())
     return GDPRComplianceManager(db)

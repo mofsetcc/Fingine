@@ -5,7 +5,7 @@ from typing import Optional, List, Dict, Any
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.base import BaseSchema, TimestampSchema, UUIDSchema, PaginatedResponse
 
@@ -21,7 +21,8 @@ class FinancialReportBase(BaseModel):
     announced_at: datetime = Field(..., description="Announcement date")
     source_url: Optional[str] = Field(None, max_length=500, description="Source URL")
     
-    @validator('fiscal_period')
+    @field_validator('fiscal_period')
+    @classmethod
     def validate_fiscal_period(cls, v):
         """Validate fiscal period."""
         valid_periods = ['Q1', 'Q2', 'Q3', 'Q4', 'FY', 'H1', 'H2']
@@ -29,7 +30,8 @@ class FinancialReportBase(BaseModel):
             raise ValueError(f'Fiscal period must be one of: {", ".join(valid_periods)}')
         return v
     
-    @validator('report_type')
+    @field_validator('report_type')
+    @classmethod
     def validate_report_type(cls, v):
         """Validate report type."""
         valid_types = ['earnings', 'balance_sheet', 'cash_flow', 'income_statement']
@@ -105,7 +107,8 @@ class BalanceSheetBase(BaseModel):
     total_equity: Optional[Decimal] = Field(None, description="Total shareholders' equity")
     retained_earnings: Optional[Decimal] = Field(None, description="Retained earnings")
     
-    @validator('fiscal_period')
+    @field_validator('fiscal_period')
+    @classmethod
     def validate_fiscal_period(cls, v):
         """Validate fiscal period."""
         valid_periods = ['Q1', 'Q2', 'Q3', 'Q4', 'FY']
@@ -157,7 +160,8 @@ class IncomeStatementBase(BaseModel):
     diluted_eps: Optional[Decimal] = Field(None, description="Diluted EPS")
     weighted_average_shares: Optional[int] = Field(None, description="Weighted average shares")
     
-    @validator('fiscal_period')
+    @field_validator('fiscal_period')
+    @classmethod
     def validate_fiscal_period(cls, v):
         """Validate fiscal period."""
         valid_periods = ['Q1', 'Q2', 'Q3', 'Q4', 'FY']
@@ -207,7 +211,8 @@ class CashFlowBase(BaseModel):
     net_change_cash: Optional[Decimal] = Field(None, description="Net change in cash")
     free_cash_flow: Optional[Decimal] = Field(None, description="Free cash flow")
     
-    @validator('fiscal_period')
+    @field_validator('fiscal_period')
+    @classmethod
     def validate_fiscal_period(cls, v):
         """Validate fiscal period."""
         valid_periods = ['Q1', 'Q2', 'Q3', 'Q4', 'FY']
@@ -257,7 +262,8 @@ class FinancialRatiosBase(BaseModel):
     inventory_turnover: Optional[float] = Field(None, description="Inventory turnover")
     receivables_turnover: Optional[float] = Field(None, description="Receivables turnover")
     
-    @validator('fiscal_period')
+    @field_validator('fiscal_period')
+    @classmethod
     def validate_fiscal_period(cls, v):
         """Validate fiscal period."""
         valid_periods = ['Q1', 'Q2', 'Q3', 'Q4', 'FY']
@@ -320,7 +326,8 @@ class EarningsCalendarEntry(BaseModel):
     confirmed: bool = Field(False, description="Date confirmed by company")
     market_time: str = Field("AMC", description="Market timing (BMO, AMC, DMT)")
     
-    @validator('market_time')
+    @field_validator('market_time')
+    @classmethod
     def validate_market_time(cls, v):
         """Validate market timing."""
         if v not in ['BMO', 'AMC', 'DMT']:  # Before Market Open, After Market Close, During Market Time

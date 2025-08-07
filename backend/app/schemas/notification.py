@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.base import BaseSchema, TimestampSchema, UUIDSchema, PaginatedResponse
 
@@ -19,7 +19,8 @@ class NotificationBase(BaseModel):
     priority: str = Field("normal", description="Notification priority")
     data: Optional[Dict[str, Any]] = Field(None, description="Additional notification data")
     
-    @validator('notification_type')
+    @field_validator('notification_type')
+    @classmethod
     def validate_notification_type(cls, v):
         """Validate notification type."""
         valid_types = [
@@ -31,7 +32,8 @@ class NotificationBase(BaseModel):
             raise ValueError(f'Notification type must be one of: {", ".join(valid_types)}')
         return v
     
-    @validator('priority')
+    @field_validator('priority')
+    @classmethod
     def validate_priority(cls, v):
         """Validate notification priority."""
         if v not in ['low', 'normal', 'high', 'urgent']:
@@ -95,7 +97,8 @@ class NotificationPreferencesBase(BaseModel):
     digest_time: str = Field("09:00", description="Daily digest time (HH:MM)")
     max_notifications_per_hour: int = Field(10, ge=1, le=100, description="Max notifications per hour")
     
-    @validator('quiet_hours_start', 'quiet_hours_end', 'digest_time')
+    @field_validator('quiet_hours_start', 'quiet_hours_end', 'digest_time')
+    @classmethod
     def validate_time_format(cls, v):
         """Validate time format."""
         if v is not None:
@@ -158,7 +161,8 @@ class NotificationTemplateBase(BaseModel):
     is_active: bool = Field(True, description="Whether template is active")
     language: str = Field("ja", description="Template language")
     
-    @validator('language')
+    @field_validator('language')
+    @classmethod
     def validate_language(cls, v):
         """Validate language code."""
         if v not in ['ja', 'en']:
@@ -192,7 +196,8 @@ class NotificationChannelBase(BaseModel):
     is_enabled: bool = Field(True, description="Whether channel is enabled")
     configuration: Dict[str, Any] = Field(..., description="Channel configuration")
     
-    @validator('channel_type')
+    @field_validator('channel_type')
+    @classmethod
     def validate_channel_type(cls, v):
         """Validate channel type."""
         if v not in ['email', 'push', 'sms', 'webhook', 'slack']:
@@ -232,7 +237,8 @@ class NotificationDeliveryBase(BaseModel):
     error_message: Optional[str] = Field(None, description="Error message if failed")
     delivered_at: Optional[datetime] = Field(None, description="Delivery timestamp")
     
-    @validator('status')
+    @field_validator('status')
+    @classmethod
     def validate_status(cls, v):
         """Validate delivery status."""
         if v not in ['pending', 'sent', 'delivered', 'failed', 'bounced']:

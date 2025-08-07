@@ -8,7 +8,7 @@ import {
     ClockIcon,
     CogIcon,
     CreditCardIcon,
-    TrendingUpIcon
+    ArrowTrendingUpIcon
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 
@@ -68,7 +68,7 @@ export const SubscriptionManagement: React.FC = () => {
   useEffect(() => {
     // Load initial data
     dispatch(fetchCurrentSubscription());
-    dispatch(fetchPlans());
+    dispatch(fetchPlans(true));
     dispatch(fetchUsageQuota());
     dispatch(fetchPlanComparison());
 

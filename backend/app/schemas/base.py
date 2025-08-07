@@ -12,11 +12,12 @@ from pydantic import BaseModel, Field
 class BaseSchema(BaseModel):
     """Base schema with common configuration."""
     
-    class Config:
-        orm_mode = True
-        use_enum_values = True
-        validate_assignment = True
-        allow_population_by_field_name = True
+    model_config = {
+        "from_attributes": True,
+        "use_enum_values": True,
+        "validate_assignment": True,
+        "populate_by_name": True
+    }
 
 
 class TimestampSchema(BaseSchema):

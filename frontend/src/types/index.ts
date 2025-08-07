@@ -32,34 +32,33 @@ export * from './notification';
 // Store and Redux types
 export * from './store';
 
-// Re-export commonly used types for convenience
+// Re-export base types
 export type {
-
-    // AI Analysis
-    AIAnalysis,
-    AIAnalysisRequest, AIAnalysisState, APIErrorResponse, APIResponse, AppDispatch, AppState, AppThunk, AsyncState, AuthResponse, AuthToken, BalanceSheet, CashFlow, DateString,
-    // Financial
-    Earnings, FinancialState, FinancialSummary, FundamentalAnalysisResult, HotStocksResponse, IncomeStatement, LoadingState,
-    // Notification
-    Notification,
-    NotificationPreferences,
-    NotificationState, PaginatedResponse, Plan, PriceData,
-    // Store
-    RootState, SentimentAnalysisResult,
-    // Stock
-    Stock,
-    StockDetail, StockSearchResult, StockState,
-    // Subscription
-    Subscription, SubscriptionState, TechnicalAnalysisResult, Timestamp, UIState,
-    // Base
-    UUID, UsageQuota,
-    // User
-    User, UserProfile, UserState, UserWithProfile,
-    // Watchlist
-    Watchlist, WatchlistAlert,
-    WatchlistState, WatchlistStock,
-    WatchlistStockWithPrice
+    UUID,
+    Timestamp,
+    DateString,
+    APIResponse,
+    APIErrorResponse,
+    ErrorDetail,
+    PaginationMeta,
+    PaginatedResponse,
+    BaseEntity,
+    TimestampEntity,
+    SortOrder,
+    SortOption,
+    FilterOperator,
+    FilterOption,
+    LoadingState,
+    AsyncState,
+    ValidationError
 } from './base';
+
+// Re-export specific domain types
+export type { Stock, StockDetail, MarketIndex, HotStock, HotStockCategory } from './stock';
+export type { User, UserProfile, UserWithProfile } from './user';
+export type { Plan, Subscription, SubscriptionStatus } from './subscription';
+export type { WatchlistStock, SimpleWatchlistStock, WatchlistStockWithPrice } from './watchlist';
+export type { NewsArticle, SentimentLabel } from './news';
 
 // Type guards and utility functions
 export const isAPIError = (response: any): response is APIErrorResponse => {
