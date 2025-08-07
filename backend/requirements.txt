@@ -10,7 +10,7 @@ psycopg2-binary==2.9.10
 
 # Redis and caching
 redis==5.0.1
-celery==5.3.4
+celery==5.5.3
 
 # Authentication and security
 python-jose[cryptography]==3.3.0
