@@ -1,0 +1,496 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudWatch Alarms for Japanese Stock Analysis Platform Production Monitoring'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: kessan
+  Environment:
+    Type: String
+    Default: prod
+  SlackWebhookURL:
+    Type: String
+    Description: Slack webhook URL for notifications
+    NoEcho: true
+  PagerDutyIntegrationKey:
+    Type: String
+    Description: PagerDuty integration key for critical alerts
+    NoEcho: true
+  EmailNotificationTopic:
+    Type: String
+    Description: SNS topic ARN for email notifications
+
+Resources:
+  # SNS Topics for Notifications
+  CriticalAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${ProjectName}-${Environment}-critical-alerts'
+      DisplayName: 'Critical Production Alerts'
+
+  WarningAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${ProjectName}-${Environment}-warning-alerts'
+      DisplayName: 'Warning Production Alerts'
+
+  # Lambda function for Slack notifications
+  SlackNotificationFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-${Environment}-slack-notifier'
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt SlackNotificationRole.Arn
+      Environment:
+        Variables:
+          SLACK_WEBHOOK_URL: !Ref SlackWebhookURL
+      Code:
+        ZipFile: |
+          import json
+          import urllib3
+          import os
+          
+          def lambda_handler(event, context):
+              webhook_url = os.environ['SLACK_WEBHOOK_URL']
+              http = urllib3.PoolManager()
+              
+              # Parse SNS message
+              message = json.loads(event['Records'][0]['Sns']['Message'])
+              alarm_name = message['AlarmName']
+              new_state = message['NewStateValue']
+              reason = message['NewStateReason']
+              
+              # Create Slack message
+              color = "danger" if new_state == "ALARM" else "good" if new_state == "OK" else "warning"
+              
+              slack_message = {
+                  "attachments": [{
+                      "color": color,
+                      "title": f"🚨 {alarm_name}",
+                      "text": reason,
+                      "fields": [
+                          {"title": "State", "value": new_state, "short": True},
+                          {"title": "Environment", "value": "Production", "short": True}
+                      ],
+                      "footer": "Kessan Monitoring",
+                      "ts": int(context.aws_request_id[:10], 16)
+                  }]
+              }
+              
+              response = http.request('POST', webhook_url,
+                                    body=json.dumps(slack_message),
+                                    headers={'Content-Type': 'application/json'})
+              
+              return {'statusCode': 200}
+
+  SlackNotificationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  # SNS Subscriptions
+  SlackCriticalSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: lambda
+      TopicArn: !Ref CriticalAlertsTopic
+      Endpoint: !GetAtt SlackNotificationFunction.Arn
+
+  SlackWarningSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: lambda
+      TopicArn: !Ref WarningAlertsTopic
+      Endpoint: !GetAtt SlackNotificationFunction.Arn
+
+  EmailCriticalSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      TopicArn: !Ref CriticalAlertsTopic
+      Endpoint: !Ref EmailNotificationTopic
+
+  # Lambda permissions for SNS
+  SlackNotificationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SlackNotificationFunction
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref CriticalAlertsTopic
+
+  SlackWarningPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SlackNotificationFunction
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref WarningAlertsTopic
+
+  # Application Load Balancer Alarms
+  HighResponseTimeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-high-response-time'
+      AlarmDescription: 'API response time is above 1 second'
+      MetricName: TargetResponseTime
+      Namespace: AWS/ApplicationELB
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1.0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Sub '${ProjectName}-${Environment}-alb'
+      AlarmActions:
+        - !Ref WarningAlertsTopic
+      OKActions:
+        - !Ref WarningAlertsTopic
+
+  CriticalResponseTimeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-critical-response-time'
+      AlarmDescription: 'API response time is above 3 seconds'
+      MetricName: TargetResponseTime
+      Namespace: AWS/ApplicationELB
+      Statistic: Average
+      Period: 180
+      EvaluationPeriods: 2
+      Threshold: 3.0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Sub '${ProjectName}-${Environment}-alb'
+      AlarmActions:
+        - !Ref CriticalAlertsTopic
+      OKActions:
+        - !Ref CriticalAlertsTopic
+
+  HighErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-high-error-rate'
+      AlarmDescription: 'API error rate is above 5%'
+      MetricName: HTTPCode_Target_5XX_Count
+      Namespace: AWS/ApplicationELB
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Sub '${ProjectName}-${Environment}-alb'
+      AlarmActions:
+        - !Ref WarningAlertsTopic
+      OKActions:
+        - !Ref WarningAlertsTopic
+
+  CriticalErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-critical-error-rate'
+      AlarmDescription: 'API error rate is above 15%'
+      MetricName: HTTPCode_Target_5XX_Count
+      Namespace: AWS/ApplicationELB
+      Statistic: Sum
+      Period: 180
+      EvaluationPeriods: 2
+      Threshold: 30
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Sub '${ProjectName}-${Environment}-alb'
+      AlarmActions:
+        - !Ref CriticalAlertsTopic
+      OKActions:
+        - !Ref CriticalAlertsTopic
+
+  # ECS Service Alarms
+  BackendHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-backend-high-cpu'
+      AlarmDescription: 'Backend service CPU utilization is above 80%'
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 80.0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !Sub '${ProjectName}-${Environment}-backend'
+        - Name: ClusterName
+          Value: !Sub '${ProjectName}-${Environment}-cluster'
+      AlarmActions:
+        - !Ref WarningAlertsTopic
+      OKActions:
+        - !Ref WarningAlertsTopic
+
+  BackendHighMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-backend-high-memory'
+      AlarmDescription: 'Backend service memory utilization is above 85%'
+      MetricName: MemoryUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 85.0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !Sub '${ProjectName}-${Environment}-backend'
+        - Name: ClusterName
+          Value: !Sub '${ProjectName}-${Environment}-cluster'
+      AlarmActions:
+        - !Ref WarningAlertsTopic
+      OKActions:
+        - !Ref WarningAlertsTopic
+
+  BackendServiceDownAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-backend-service-down'
+      AlarmDescription: 'Backend service has no running tasks'
+      MetricName: RunningTaskCount
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !Sub '${ProjectName}-${Environment}-backend'
+        - Name: ClusterName
+          Value: !Sub '${ProjectName}-${Environment}-cluster'
+      AlarmActions:
+        - !Ref CriticalAlertsTopic
+      OKActions:
+        - !Ref CriticalAlertsTopic
+
+  # RDS Database Alarms
+  DatabaseHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-database-high-cpu'
+      AlarmDescription: 'Database CPU utilization is above 80%'
+      MetricName: CPUUtilization
+      Namespace: AWS/RDS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 80.0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Sub '${ProjectName}-${Environment}-postgres'
+      AlarmActions:
+        - !Ref WarningAlertsTopic
+      OKActions:
+        - !Ref WarningAlertsTopic
+
+  DatabaseHighConnectionsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-database-high-connections'
+      AlarmDescription: 'Database connection count is above 80% of max'
+      MetricName: DatabaseConnections
+      Namespace: AWS/RDS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Sub '${ProjectName}-${Environment}-postgres'
+      AlarmActions:
+        - !Ref WarningAlertsTopic
+      OKActions:
+        - !Ref WarningAlertsTopic
+
+  DatabaseLowStorageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-database-low-storage'
+      AlarmDescription: 'Database free storage space is below 2GB'
+      MetricName: FreeStorageSpace
+      Namespace: AWS/RDS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 2147483648  # 2GB in bytes
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Sub '${ProjectName}-${Environment}-postgres'
+      AlarmActions:
+        - !Ref CriticalAlertsTopic
+      OKActions:
+        - !Ref CriticalAlertsTopic
+
+  # ElastiCache Redis Alarms
+  RedisHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-redis-high-cpu'
+      AlarmDescription: 'Redis CPU utilization is above 80%'
+      MetricName: CPUUtilization
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 80.0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: CacheClusterId
+          Value: !Sub '${ProjectName}-${Environment}-redis-001'
+      AlarmActions:
+        - !Ref WarningAlertsTopic
+      OKActions:
+        - !Ref WarningAlertsTopic
+
+  RedisHighMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-redis-high-memory'
+      AlarmDescription: 'Redis memory utilization is above 85%'
+      MetricName: DatabaseMemoryUsagePercentage
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 85.0
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: CacheClusterId
+          Value: !Sub '${ProjectName}-${Environment}-redis-001'
+      AlarmActions:
+        - !Ref WarningAlertsTopic
+      OKActions:
+        - !Ref WarningAlertsTopic
+
+  # Custom Application Metrics Alarms
+  HighAICostAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-high-ai-cost'
+      AlarmDescription: 'Daily AI costs are above $80'
+      MetricName: AICallCost
+      Namespace: Kessan/Business
+      Statistic: Sum
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 80.0
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref WarningAlertsTopic
+      OKActions:
+        - !Ref WarningAlertsTopic
+
+  CriticalAICostAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-critical-ai-cost'
+      AlarmDescription: 'Daily AI costs are above $95 (near budget limit)'
+      MetricName: AICallCost
+      Namespace: Kessan/Business
+      Statistic: Sum
+      Period: 1800
+      EvaluationPeriods: 1
+      Threshold: 95.0
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref CriticalAlertsTopic
+      OKActions:
+        - !Ref CriticalAlertsTopic
+
+  LowDataSourceSuccessRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-low-data-source-success-rate'
+      AlarmDescription: 'Data source success rate is below 90%'
+      MetricName: DataSourceSuccessRate
+      Namespace: Kessan/Performance
+      Statistic: Average
+      Period: 600
+      EvaluationPeriods: 2
+      Threshold: 90.0
+      ComparisonOperator: LessThanThreshold
+      AlarmActions:
+        - !Ref WarningAlertsTopic
+      OKActions:
+        - !Ref WarningAlertsTopic
+
+  CriticalDataSourceFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-critical-data-source-failure'
+      AlarmDescription: 'Data source success rate is below 70%'
+      MetricName: DataSourceSuccessRate
+      Namespace: Kessan/Performance
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 70.0
+      ComparisonOperator: LessThanThreshold
+      AlarmActions:
+        - !Ref CriticalAlertsTopic
+      OKActions:
+        - !Ref CriticalAlertsTopic
+
+  # Health Check Alarms
+  HealthCheckFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-health-check-failure'
+      AlarmDescription: 'Application health check is failing'
+      MetricName: HealthyHostCount
+      Namespace: AWS/ApplicationELB
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: TargetGroup
+          Value: !Sub '${ProjectName}-${Environment}-backend-tg'
+        - Name: LoadBalancer
+          Value: !Sub '${ProjectName}-${Environment}-alb'
+      AlarmActions:
+        - !Ref CriticalAlertsTopic
+      OKActions:
+        - !Ref CriticalAlertsTopic
+
+Outputs:
+  CriticalAlertsTopicArn:
+    Description: ARN of the critical alerts SNS topic
+    Value: !Ref CriticalAlertsTopic
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-critical-alerts-topic'
+
+  WarningAlertsTopicArn:
+    Description: ARN of the warning alerts SNS topic
+    Value: !Ref WarningAlertsTopic
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-warning-alerts-topic'
+
+  SlackNotificationFunctionArn:
+    Description: ARN of the Slack notification Lambda function
+    Value: !GetAtt SlackNotificationFunction.Arn

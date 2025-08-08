@@ -1,0 +1,247 @@
+{
+  "test_summary": {
+    "timestamp": "2025-08-07T12:27:52.987302",
+    "overall_status": "success",
+    "environment": "test",
+    "version": "1.0.0",
+    "test_mode": true
+  },
+  "task_results": {
+    "stock_data_seeding": {
+      "status": "success",
+      "details": {
+        "stocks_created": 3,
+        "price_records": 90,
+        "metrics_created": 3,
+        "test_mode": true,
+        "timestamp": "2025-08-07T12:27:52.979235"
+      }
+    },
+    "data_source_validation": {
+      "status": "success",
+      "details": {
+        "alpha_vantage": {
+          "status": "success",
+          "health_check": {
+            "status": "healthy",
+            "response_time_ms": 1200
+          },
+          "functionality_test": {
+            "current_price_test": {
+              "success": true,
+              "price": 2500.0
+            },
+            "historical_data_test": {
+              "success": true,
+              "records_count": 30
+            }
+          }
+        },
+        "yahoo_finance": {
+          "status": "success",
+          "health_check": {
+            "status": "healthy",
+            "response_time_ms": 800
+          },
+          "functionality_test": {
+            "current_price_test": {
+              "success": true,
+              "price": 2498.5
+            },
+            "historical_data_test": {
+              "success": true,
+              "records_count": 30
+            }
+          }
+        },
+        "edinet": {
+          "status": "success",
+          "health_check": {
+            "status": "healthy",
+            "response_time_ms": 2500
+          },
+          "functionality_test": {
+            "financial_data_test": {
+              "success": true,
+              "statements_count": 3
+            }
+          }
+        },
+        "news_data": {
+          "status": "success",
+          "health_check": {
+            "status": "healthy",
+            "response_time_ms": 1500
+          },
+          "functionality_test": {
+            "news_retrieval_test": {
+              "success": true,
+              "articles_count": 15
+            }
+          }
+        }
+      }
+    },
+    "ai_analysis_testing": {
+      "status": "success",
+      "details": {
+        "test_results": {
+          "7203": {
+            "short_term": {
+              "success": true,
+              "rating": "Bullish",
+              "confidence": 0.75,
+              "key_factors_count": 4,
+              "has_price_target": true,
+              "processing_time_ms": 3500
+            },
+            "mid_term": {
+              "success": true,
+              "rating": "Neutral",
+              "confidence": 0.68,
+              "key_factors_count": 5,
+              "has_price_target": true,
+              "processing_time_ms": 4200
+            },
+            "long_term": {
+              "success": true,
+              "rating": "Bullish",
+              "confidence": 0.82,
+              "key_factors_count": 6,
+              "has_price_target": true,
+              "processing_time_ms": 5100
+            }
+          },
+          "6758": {
+            "short_term": {
+              "success": true,
+              "rating": "Neutral",
+              "confidence": 0.71,
+              "key_factors_count": 3,
+              "has_price_target": true,
+              "processing_time_ms": 3800
+            },
+            "mid_term": {
+              "success": true,
+              "rating": "Bullish",
+              "confidence": 0.79,
+              "key_factors_count": 4,
+              "has_price_target": true,
+              "processing_time_ms": 4500
+            },
+            "long_term": {
+              "success": true,
+              "rating": "Strong Bullish",
+              "confidence": 0.85,
+              "key_factors_count": 5,
+              "has_price_target": true,
+              "processing_time_ms": 5800
+            }
+          }
+        },
+        "success_rate": 100.0,
+        "total_tests": 6,
+        "successful_tests": 6,
+        "test_mode": true,
+        "timestamp": "2025-08-07T12:27:52.984119"
+      }
+    },
+    "news_pipeline_validation": {
+      "status": "success",
+      "details": {
+        "test_results": {
+          "7203": {
+            "success": true,
+            "news_aggregation": {
+              "articles_found": 25,
+              "sources": [
+                "Nikkei",
+                "Reuters Japan",
+                "Yahoo Finance Japan"
+              ],
+              "date_range_days": 7
+            },
+            "sentiment_analysis": {
+              "articles_analyzed": 20,
+              "sentiment_distribution": {
+                "positive": 12,
+                "neutral": 5,
+                "negative": 3
+              },
+              "sample_results": [
+                {
+                  "headline": "トヨタ自動車の業績が好調...",
+                  "sentiment": "positive",
+                  "score": 0.8
+                },
+                {
+                  "headline": "新型車の発表により...",
+                  "sentiment": "positive",
+                  "score": 0.7
+                },
+                {
+                  "headline": "市場の動向について...",
+                  "sentiment": "neutral",
+                  "score": 0.1
+                }
+              ]
+            },
+            "sentiment_timeline": {
+              "timeline_points": 7,
+              "average_sentiment": 0.65
+            }
+          },
+          "6758": {
+            "success": true,
+            "news_aggregation": {
+              "articles_found": 18,
+              "sources": [
+                "Nikkei",
+                "Reuters Japan",
+                "Yahoo Finance Japan"
+              ],
+              "date_range_days": 7
+            },
+            "sentiment_analysis": {
+              "articles_analyzed": 15,
+              "sentiment_distribution": {
+                "positive": 8,
+                "neutral": 4,
+                "negative": 3
+              },
+              "sample_results": [
+                {
+                  "headline": "ソニーの新製品発表...",
+                  "sentiment": "positive",
+                  "score": 0.75
+                },
+                {
+                  "headline": "エンターテインメント事業...",
+                  "sentiment": "positive",
+                  "score": 0.6
+                },
+                {
+                  "headline": "競合他社との比較...",
+                  "sentiment": "neutral",
+                  "score": 0.05
+                }
+              ]
+            },
+            "sentiment_timeline": {
+              "timeline_points": 7,
+              "average_sentiment": 0.58
+            }
+          }
+        },
+        "pipeline_health": 100.0,
+        "successful_symbols": 2,
+        "total_symbols": 2,
+        "test_mode": true,
+        "timestamp": "2025-08-07T12:27:52.984293"
+      }
+    }
+  },
+  "recommendations": [
+    "✅ All validation tests passed - implementation ready for production testing"
+  ]
+}

@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      - DEBUG=False
+      - ENVIRONMENT=production
+      - ALLOWED_HOSTS=kessan.finance,*.kessan.finance
+      - CORS_ORIGINS=https://kessan.finance,https://www.kessan.finance
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SECRET_KEY=${JWT_SECRET}
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
+      - GOOGLE_GEMINI_API_KEY=${GOOGLE_GEMINI_API_KEY}
+      - NEWS_API_KEY=${NEWS_API_KEY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - LINE_CLIENT_ID=${LINE_CLIENT_ID}
+      - LINE_CLIENT_SECRET=${LINE_CLIENT_SECRET}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - FROM_EMAIL=noreply@kessan.finance
+      - DAILY_AI_BUDGET_USD=500.0
+      - MONTHLY_AI_BUDGET_USD=12000.0
+      - RATE_LIMIT_PER_MINUTE=120
+      - RATE_LIMIT_PER_HOUR=5000
+      - LOG_LEVEL=INFO
+      - STRUCTURED_LOGGING=true
+      - ENABLE_METRICS=true
+      - METRICS_PORT=9090
+      - SECURE_COOKIES=true
+      - HTTPS_ONLY=true
+    ports:
+      - "8000:8000"
+      - "9090:9090"  # Metrics port
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - VITE_API_BASE_URL=https://kessan.finance/api
+        - VITE_ENVIRONMENT=production
+    ports:
+      - "80:80"
+      - "443:443"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  default:
+    name: kessan-production

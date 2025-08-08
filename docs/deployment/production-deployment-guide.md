@@ -1,242 +1,377 @@
-# Project Kessan Production Deployment Guide
+# Production Deployment Guide
 
-This guide covers the complete production deployment process for Project Kessan.
-
-## Table of Contents
-
-1. [Prerequisites](#prerequisites)
-2. [Infrastructure Setup](#infrastructure-setup)
-3. [Application Deployment](#application-deployment)
-4. [Database Migration](#database-migration)
-5. [Monitoring Setup](#monitoring-setup)
-6. [Security Configuration](#security-configuration)
-7. [Performance Optimization](#performance-optimization)
-8. [Backup and Recovery](#backup-and-recovery)
-9. [Troubleshooting](#troubleshooting)
+This guide provides step-by-step instructions for deploying the Japanese Stock Analysis Platform (Kessan) to production on AWS.
 
 ## Prerequisites
 
-### Required Tools
-- AWS CLI v2
-- Terraform v1.5+
-- Docker
-- kubectl (for EKS if used)
-- GitHub CLI (optional)
+Before starting the deployment, ensure you have:
 
-### AWS Account Setup
-- Production AWS account with appropriate permissions
-- IAM roles configured for deployment
-- Route 53 hosted zone for domain
-- SSL certificates in ACM
+1. **AWS Account** with appropriate permissions
+2. **Domain name** registered and ready for configuration
+3. **Required tools installed**:
+   - AWS CLI v2
+   - Terraform >= 1.0
+   - Docker
+   - jq
+   - curl
 
-### Environment Variables
+## Pre-Deployment Setup
+
+### 1. Configure AWS Credentials
+
 ```bash
-export AWS_PROFILE=kessan-production
-export AWS_REGION=ap-northeast-1
-export ENVIRONMENT=production
-export DOMAIN_NAME=kessan.ai
+aws configure
+# Enter your AWS Access Key ID, Secret Access Key, and region (ap-northeast-1)
 ```
 
-## Infrastructure Setup
-
-### 1. Terraform Infrastructure
+### 2. Verify Prerequisites
 
 ```bash
-# Navigate to infrastructure directory
-cd infrastructure/terraform
+# Check AWS credentials
+aws sts get-caller-identity
 
-# Initialize Terraform
-terraform init -backend-config="bucket=kessan-terraform-state-prod"
+# Check Terraform installation
+terraform version
 
-# Plan infrastructure changes
-terraform plan -var-file="production.tfvars"
-
-# Apply infrastructure
-terraform apply -var-file="production.tfvars"
-```### 2. Cloud
-Formation Stack
-
-```bash
-# Deploy monitoring stack
-aws cloudformation deploy \
-  --template-file infrastructure/monitoring/cloudwatch-dashboards.yml \
-  --stack-name kessan-monitoring-prod \
-  --parameter-overrides Environment=production \
-  --capabilities CAPABILITY_IAM
+# Check Docker installation
+docker version
 ```
 
-## Application Deployment
+### 3. Update Configuration
 
-### 1. Build and Push Docker Images
+1. **Update domain configuration** in `infrastructure/terraform/terraform.tfvars`:
+   ```hcl
+   domain_name = "your-actual-domain.com"
+   ```
+
+2. **Review production settings** in `infrastructure/terraform/terraform.tfvars`
+
+## Deployment Process
+
+### Step 1: Execute Infrastructure Deployment
+
+Run the production deployment script:
 
 ```bash
-# Build backend image
-docker build -t kessan-api:latest -f backend/Dockerfile backend/
-docker tag kessan-api:latest 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/kessan-api:latest
-
-# Build frontend image  
-docker build -t kessan-frontend:latest -f frontend/Dockerfile frontend/
-docker tag kessan-frontend:latest 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/kessan-frontend:latest
-
-# Push to ECR
-aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com
-docker push 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/kessan-api:latest
-docker push 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/kessan-frontend:latest
+cd infrastructure
+./deploy-production.sh
 ```
 
-### 2. Deploy to ECS Fargate
+This script will:
+- ✅ Check prerequisites
+- ✅ Create Terraform backend (S3 bucket and DynamoDB table)
+- ✅ Request and validate SSL certificate
+- ✅ Create production secrets in AWS Secrets Manager
+- ✅ Deploy infrastructure using Terraform
+- ✅ Validate deployment
+
+### Step 2: Configure DNS Records
+
+After infrastructure deployment, configure your DNS:
+
+1. **Get the ALB DNS name** from Terraform outputs:
+   ```bash
+   cd terraform
+   terraform output alb_dns_name
+   ```
+
+2. **Create DNS records**:
+   - **CNAME Record**: `your-domain.com` → `alb-dns-name`
+   - **CNAME Record**: `www.your-domain.com` → `alb-dns-name`
+
+   Or use ALIAS records if your DNS provider supports them.
+
+### Step 3: Update Application Secrets
+
+Update the application secrets with your actual API keys:
 
 ```bash
-# Update ECS service
-aws ecs update-service \
-  --cluster kessan-production \
-  --service kessan-api-service \
-  --force-new-deployment
+# Get the current secrets
+aws secretsmanager get-secret-value --secret-id kessan-prod-app-secrets
 
-aws ecs update-service \
-  --cluster kessan-production \
-  --service kessan-frontend-service \
-  --force-new-deployment
+# Update with actual values
+aws secretsmanager update-secret \
+  --secret-id kessan-prod-app-secrets \
+  --secret-string '{
+    "JWT_SECRET": "your-generated-jwt-secret",
+    "ALPHA_VANTAGE_API_KEY": "your-alpha-vantage-key",
+    "GOOGLE_GEMINI_API_KEY": "your-gemini-key",
+    "NEWS_API_KEY": "your-news-api-key",
+    "GOOGLE_CLIENT_ID": "your-google-oauth-client-id",
+    "GOOGLE_CLIENT_SECRET": "your-google-oauth-secret",
+    "LINE_CLIENT_ID": "your-line-oauth-client-id",
+    "LINE_CLIENT_SECRET": "your-line-oauth-secret",
+    "SENDGRID_API_KEY": "your-sendgrid-key"
+  }'
 ```
 
-## Database Migration
+### Step 4: Build and Push Docker Images
 
-### 1. Backup Production Database
+1. **Get ECR repository URLs**:
+   ```bash
+   cd terraform
+   BACKEND_ECR=$(terraform output -raw backend_ecr_repository_url)
+   FRONTEND_ECR=$(terraform output -raw frontend_ecr_repository_url)
+   ```
+
+2. **Login to ECR**:
+   ```bash
+   aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin $BACKEND_ECR
+   ```
+
+3. **Build and push backend image**:
+   ```bash
+   cd ../backend
+   docker build -t kessan-backend .
+   docker tag kessan-backend:latest $BACKEND_ECR:latest
+   docker push $BACKEND_ECR:latest
+   ```
+
+4. **Build and push frontend image**:
+   ```bash
+   cd ../frontend
+   docker build -t kessan-frontend .
+   docker tag kessan-frontend:latest $FRONTEND_ECR:latest
+   docker push $FRONTEND_ECR:latest
+   ```
+
+### Step 5: Deploy ECS Services
+
+1. **Update ECS task definitions** with actual ECR URIs:
+   ```bash
+   cd ../infrastructure/ecs-task-definitions
+   
+   # Get AWS account ID
+   AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+   
+   # Update backend task definition
+   sed "s/\${AWS_ACCOUNT_ID}/$AWS_ACCOUNT_ID/g; s|\${BACKEND_ECR_URI}|$BACKEND_ECR|g" \
+     backend-task-definition.json > backend-task-definition-final.json
+   
+   # Update frontend task definition
+   sed "s/\${AWS_ACCOUNT_ID}/$AWS_ACCOUNT_ID/g; s|\${FRONTEND_ECR_URI}|$FRONTEND_ECR|g" \
+     frontend-task-definition.json > frontend-task-definition-final.json
+   ```
+
+2. **Register task definitions**:
+   ```bash
+   aws ecs register-task-definition --cli-input-json file://backend-task-definition-final.json
+   aws ecs register-task-definition --cli-input-json file://frontend-task-definition-final.json
+   ```
+
+3. **Update ECS services**:
+   ```bash
+   # Update backend service
+   aws ecs update-service \
+     --cluster kessan-prod-cluster \
+     --service kessan-prod-backend \
+     --task-definition kessan-prod-backend
+   
+   # Update frontend service
+   aws ecs update-service \
+     --cluster kessan-prod-cluster \
+     --service kessan-prod-frontend \
+     --task-definition kessan-prod-frontend
+   ```
+
+### Step 6: Validate Deployment
+
+Run the validation script:
 
 ```bash
-# Create backup before migration
-./scripts/backup-production-db.sh
+cd ../
+./validate-production.sh
 ```
 
-### 2. Run Migrations
+This will check:
+- ✅ Infrastructure components
+- ✅ Service health endpoints
+- ✅ SSL certificate configuration
+- ✅ Monitoring and logging
+- ✅ Security configuration
+
+## Post-Deployment Tasks
+
+### 1. Database Migration
+
+Run database migrations:
 
 ```bash
-# Set production database URL
-export DATABASE_URL="postgresql://user:pass@prod-db.amazonaws.com:5432/kessan"
+# Connect to ECS task and run migrations
+aws ecs execute-command \
+  --cluster kessan-prod-cluster \
+  --task $(aws ecs list-tasks --cluster kessan-prod-cluster --service-name kessan-prod-backend --query 'taskArns[0]' --output text) \
+  --container backend \
+  --interactive \
+  --command "/bin/bash"
 
-# Run migrations
-cd backend
+# Inside the container
 alembic upgrade head
-```## Mo
-nitoring Setup
-
-### 1. Datadog Configuration
-
-```bash
-# Set Datadog API key
-export DD_API_KEY=your-datadog-api-key
-
-# Deploy Datadog agent
-kubectl apply -f infrastructure/monitoring/datadog-agent.yaml
 ```
 
-### 2. CloudWatch Alarms
+### 2. Initial Data Seeding
+
+Seed the database with initial stock data:
 
 ```bash
-# Deploy CloudWatch alarms
-aws cloudformation deploy \
-  --template-file infrastructure/monitoring/cloudwatch-alarms.yml \
-  --stack-name kessan-alarms-prod \
-  --parameter-overrides \
-    Environment=production \
-    SNSTopicArn=arn:aws:sns:ap-northeast-1:123456789012:kessan-alerts
+# Inside the ECS container
+python scripts/populate_sample_stocks.py
 ```
 
-## Security Configuration
+### 3. Monitoring Setup
 
-### 1. WAF Rules
+1. **Configure CloudWatch dashboards**:
+   ```bash
+   aws cloudformation deploy \
+     --template-file infrastructure/monitoring/cloudwatch-dashboards.yml \
+     --stack-name kessan-prod-monitoring-dashboards
+   ```
 
-```bash
-# Deploy WAF rules
-aws cloudformation deploy \
-  --template-file infrastructure/security/waf-rules.yml \
-  --stack-name kessan-waf-prod
-```
+2. **Set up CloudWatch alarms**:
+   ```bash
+   aws cloudformation deploy \
+     --template-file infrastructure/monitoring/cloudwatch-alarms.yml \
+     --stack-name kessan-prod-monitoring-alarms
+   ```
 
-### 2. Security Groups
+### 4. CDN Setup (Optional)
 
-```bash
-# Update security groups via Terraform
-terraform apply -target=aws_security_group.api_sg -var-file="production.tfvars"
-```
-
-## Performance Optimization
-
-### 1. CloudFront CDN
+Deploy CloudFront CDN for better performance:
 
 ```bash
-# Deploy CDN configuration
 aws cloudformation deploy \
   --template-file infrastructure/cloudfront-cdn.yml \
-  --stack-name kessan-cdn-prod
+  --stack-name kessan-prod-cdn \
+  --parameter-overrides \
+    DomainName=your-domain.com \
+    CertificateArn=your-certificate-arn
 ```
 
-### 2. ElastiCache Redis
+## Verification Checklist
 
-```bash
-# Verify Redis cluster
-aws elasticache describe-cache-clusters \
-  --cache-cluster-id kessan-redis-prod
-```## Back
-up and Recovery
+After deployment, verify the following:
 
-### 1. Database Backups
-
-```bash
-# Configure automated backups
-aws rds modify-db-instance \
-  --db-instance-identifier kessan-db-prod \
-  --backup-retention-period 30 \
-  --preferred-backup-window "03:00-04:00"
-```
-
-### 2. Application Data Backup
-
-```bash
-# Backup application data
-./scripts/backup-application-data.sh production
-```
+- [ ] **Infrastructure**: All AWS resources are created and healthy
+- [ ] **SSL Certificate**: HTTPS works correctly
+- [ ] **DNS**: Domain resolves to the correct load balancer
+- [ ] **Backend API**: Health endpoint returns 200 OK
+- [ ] **Frontend**: Website loads correctly
+- [ ] **Database**: Connection works and migrations are applied
+- [ ] **Redis**: Cache is accessible and working
+- [ ] **Monitoring**: CloudWatch logs are being generated
+- [ ] **Security**: All secrets are properly configured
+- [ ] **Performance**: Response times are acceptable
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **ECS Service Won't Start**
-   - Check CloudWatch logs
-   - Verify environment variables
-   - Check security group rules
+1. **SSL Certificate Validation Fails**:
+   - Ensure DNS records for certificate validation are added
+   - Wait for DNS propagation (can take up to 48 hours)
 
-2. **Database Connection Issues**
-   - Verify RDS security groups
-   - Check database credentials
-   - Test connectivity from ECS tasks
+2. **ECS Tasks Not Starting**:
+   - Check CloudWatch logs for error messages
+   - Verify secrets are properly configured
+   - Ensure ECR images are pushed correctly
 
-3. **High Response Times**
-   - Check Redis cache hit rates
-   - Monitor database query performance
-   - Review CloudFront cache settings
+3. **Database Connection Issues**:
+   - Verify security group rules allow ECS to RDS communication
+   - Check database credentials in secrets manager
+
+4. **High Response Times**:
+   - Check ECS task CPU/memory utilization
+   - Verify Redis cache is working
+   - Review database query performance
 
 ### Useful Commands
 
 ```bash
 # Check ECS service status
-aws ecs describe-services --cluster kessan-production --services kessan-api-service
+aws ecs describe-services --cluster kessan-prod-cluster --services kessan-prod-backend
 
 # View CloudWatch logs
-aws logs tail /aws/ecs/kessan-api --follow
+aws logs tail /ecs/kessan-prod-backend --follow
 
-# Check RDS performance
-aws rds describe-db-instances --db-instance-identifier kessan-db-prod
+# Check ALB target health
+aws elbv2 describe-target-health --target-group-arn $(aws elbv2 describe-target-groups --names kessan-prod-backend-tg --query 'TargetGroups[0].TargetGroupArn' --output text)
+
+# Test API endpoints
+curl -f https://your-domain.com/health
+curl -f https://your-domain.com/api/v1/stocks/search?q=toyota
 ```
 
-## Post-Deployment Checklist
+## Rollback Procedure
 
-- [ ] All services are running and healthy
-- [ ] Database migrations completed successfully
-- [ ] SSL certificates are valid and configured
-- [ ] CDN is serving static assets correctly
-- [ ] Monitoring and alerting are active
-- [ ] Backup procedures are configured
-- [ ] Security scans completed
-- [ ] Performance tests passed
-- [ ] Documentation updated
+If issues occur, you can rollback:
+
+1. **Rollback ECS services** to previous task definition:
+   ```bash
+   aws ecs update-service \
+     --cluster kessan-prod-cluster \
+     --service kessan-prod-backend \
+     --task-definition kessan-prod-backend:PREVIOUS_REVISION
+   ```
+
+2. **Rollback infrastructure** using Terraform:
+   ```bash
+   cd terraform
+   git checkout previous-working-commit
+   terraform plan
+   terraform apply
+   ```
+
+## Maintenance
+
+### Regular Tasks
+
+1. **Update Docker images** with new releases
+2. **Monitor CloudWatch metrics** and logs
+3. **Review and rotate secrets** periodically
+4. **Update SSL certificates** before expiration
+5. **Backup database** regularly
+6. **Review security groups** and access patterns
+
+### Scaling
+
+To scale the application:
+
+1. **Increase ECS service desired count**:
+   ```bash
+   aws ecs update-service \
+     --cluster kessan-prod-cluster \
+     --service kessan-prod-backend \
+     --desired-count 5
+   ```
+
+2. **Scale RDS** if needed:
+   ```bash
+   aws rds modify-db-instance \
+     --db-instance-identifier kessan-prod-db \
+     --db-instance-class db.r5.xlarge \
+     --apply-immediately
+   ```
+
+3. **Scale Redis** if needed:
+   ```bash
+   aws elasticache modify-replication-group \
+     --replication-group-id kessan-prod-redis \
+     --cache-node-type cache.r5.xlarge
+   ```
+
+## Support
+
+For deployment issues:
+
+1. Check the validation report generated by `validate-production.sh`
+2. Review CloudWatch logs for error messages
+3. Verify all configuration values in `terraform.tfvars`
+4. Ensure all secrets are properly configured in AWS Secrets Manager
+
+## Security Considerations
+
+- All secrets are stored in AWS Secrets Manager
+- Database and Redis are in private subnets
+- Security groups follow least privilege principle
+- SSL/TLS encryption is enforced
+- Regular security updates should be applied
