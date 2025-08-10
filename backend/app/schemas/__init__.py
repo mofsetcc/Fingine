@@ -1,221 +1,219 @@
 """Pydantic schemas package."""
 
 # Base schemas
-from .base import (
-    BaseSchema,
-    TimestampSchema,
-    UUIDSchema,
-    PaginatedResponse,
-    PaginationParams,
-    ErrorResponse
-)
-
-# User schemas
-from .user import (
-    UserRegistration,
-    UserLogin,
-    PasswordReset,
-    PasswordResetConfirm,
-    OAuthLogin,
-    UserProfileUpdate,
-    UserProfile,
-    User,
-    UserWithProfile,
-    AuthToken,
-    AuthResponse,
-    UserOAuthIdentity,
-    UserOAuthIdentityCreate
-)
-
-# Subscription schemas
-from .subscription import (
-    Plan,
-    PlanCreate,
-    PlanUpdate,
-    SubscriptionCreate,
-    SubscriptionUpdate,
-    Subscription,
-    SubscriptionWithUsage,
-    UsageQuota,
-    BillingInfo,
-    Invoice,
-    PlanComparison,
-    SubscriptionAnalytics
-)
-
-# Stock schemas
-from .stock import (
-    StockBase,
-    StockCreate,
-    StockUpdate,
-    Stock,
-    StockSearchQuery,
-    StockSearchResult,
-    PriceDataBase,
-    PriceDataCreate,
-    PriceData,
-    StockDailyMetricsBase,
-    StockDailyMetricsCreate,
-    StockDailyMetrics,
-    MarketIndex,
-    HotStock,
-    HotStocksResponse,
-    StockDetail,
-    PriceHistoryQuery,
-    PriceHistoryResponse,
-    TechnicalIndicators,
-    PaginatedStocksResponse,
-    PaginatedPriceDataResponse
-)
-
-# Financial schemas
-from .financial import (
-    FinancialReportBase,
-    FinancialReportCreate,
-    FinancialReport,
-    EarningsBase,
-    EarningsCreate,
-    Earnings,
-    BalanceSheetBase,
-    BalanceSheetCreate,
-    BalanceSheet,
-    IncomeStatementBase,
-    IncomeStatementCreate,
-    IncomeStatement,
-    CashFlowBase,
-    CashFlowCreate,
-    CashFlow,
-    FinancialRatiosBase,
-    FinancialRatiosCreate,
-    FinancialRatios,
-    FinancialSummary,
-    EarningsCalendarEntry,
-    EarningsCalendarResponse,
-    PaginatedFinancialReportsResponse,
-    PaginatedEarningsResponse,
-    PaginatedBalanceSheetsResponse,
-    PaginatedIncomeStatementsResponse,
-    PaginatedCashFlowsResponse
-)
-
 # AI Analysis schemas
 from .ai_analysis import (
-    AIAnalysisRequest,
-    BulkAnalysisRequest,
+    AIAnalysis,
     AIAnalysisBase,
     AIAnalysisCreate,
-    AIAnalysis,
-    FundamentalAnalysisResult,
-    TechnicalAnalysisResult,
-    SentimentAnalysisResult,
-    RiskAssessmentResult,
-    PricePredictionResult,
-    AnalysisHistory,
-    AnalysisQueueStatus,
+    AIAnalysisRequest,
     AnalysisComparison,
     AnalysisExportRequest,
     AnalysisExportResponse,
+    AnalysisHistory,
+    AnalysisQueueStatus,
+    AnalysisStatistics,
+    BulkAnalysisRequest,
+    FundamentalAnalysisResult,
     PaginatedAIAnalysisResponse,
-    AnalysisStatistics
-)
-
-# Watchlist schemas
-from .watchlist import (
-    WatchlistBase,
-    WatchlistCreate,
-    WatchlistUpdate,
-    Watchlist,
-    WatchlistWithStocks,
-    WatchlistStockBase,
-    WatchlistStockCreate,
-    WatchlistStockUpdate,
-    WatchlistStock,
-    WatchlistStockWithPrice,
-    WatchlistAlertBase,
-    WatchlistAlertCreate,
-    WatchlistAlert,
-    WatchlistPerformance,
-    WatchlistStatistics,
-    PublicWatchlistSummary,
-    WatchlistFollower,
-    WatchlistImportRequest,
-    WatchlistExportRequest,
-    WatchlistExportResponse,
-    BulkWatchlistStockOperation,
-    BulkOperationResult,
-    PaginatedWatchlistsResponse,
-    PaginatedWatchlistStocksResponse,
-    PaginatedWatchlistAlertsResponse,
-    PaginatedPublicWatchlistsResponse
-)
-
-# Notification schemas
-from .notification import (
-    NotificationBase,
-    NotificationCreate,
-    NotificationUpdate,
-    Notification,
-    NotificationPreferencesBase,
-    NotificationPreferencesCreate,
-    NotificationPreferencesUpdate,
-    NotificationPreferences,
-    NotificationTemplateBase,
-    NotificationTemplateCreate,
-    NotificationTemplateUpdate,
-    NotificationTemplate,
-    NotificationChannelBase,
-    NotificationChannelCreate,
-    NotificationChannelUpdate,
-    NotificationChannel,
-    NotificationDeliveryBase,
-    NotificationDeliveryCreate,
-    NotificationDelivery,
-    NotificationStatistics,
-    BulkNotificationRequest,
-    BulkNotificationResult,
-    NotificationDigest,
-    PaginatedNotificationsResponse,
-    PaginatedNotificationTemplatesResponse,
-    PaginatedNotificationChannelsResponse
+    PricePredictionResult,
+    RiskAssessmentResult,
+    SentimentAnalysisResult,
+    TechnicalAnalysisResult,
 )
 
 # API Response schemas
 from .api_response import (
-    APIResponse,
-    ErrorDetail,
+    AnalyticsResponse,
     APIErrorResponse,
-    SuccessResponse,
-    CreatedResponse,
-    UpdatedResponse,
-    DeletedResponse,
-    PaginationMeta,
-    PaginatedResponse,
-    ValidationErrorResponse,
+    APIResponse,
     AuthenticationErrorResponse,
     AuthorizationErrorResponse,
-    RateLimitErrorResponse,
-    HealthCheckResponse,
     BatchOperationResult,
     BatchResponse,
-    FileUploadResponse,
+    CreatedResponse,
+    DeletedResponse,
+    ErrorDetail,
     ExportResponse,
+    FileUploadResponse,
+    HealthCheckResponse,
+    PaginatedResponse,
+    PaginationMeta,
+    RateLimitErrorResponse,
     SearchMeta,
     SearchResponse,
-    AnalyticsResponse,
-    WebSocketMessage,
+    StatusResponse,
+    SuccessResponse,
+    UpdatedResponse,
+    ValidationErrorResponse,
     WebSocketErrorMessage,
-    StatusResponse
+    WebSocketMessage,
+)
+from .base import (
+    BaseSchema,
+    ErrorResponse,
+    PaginatedResponse,
+    PaginationParams,
+    TimestampSchema,
+    UUIDSchema,
+)
+
+# Financial schemas
+from .financial import (
+    BalanceSheet,
+    BalanceSheetBase,
+    BalanceSheetCreate,
+    CashFlow,
+    CashFlowBase,
+    CashFlowCreate,
+    Earnings,
+    EarningsBase,
+    EarningsCalendarEntry,
+    EarningsCalendarResponse,
+    EarningsCreate,
+    FinancialRatios,
+    FinancialRatiosBase,
+    FinancialRatiosCreate,
+    FinancialReport,
+    FinancialReportBase,
+    FinancialReportCreate,
+    FinancialSummary,
+    IncomeStatement,
+    IncomeStatementBase,
+    IncomeStatementCreate,
+    PaginatedBalanceSheetsResponse,
+    PaginatedCashFlowsResponse,
+    PaginatedEarningsResponse,
+    PaginatedFinancialReportsResponse,
+    PaginatedIncomeStatementsResponse,
+)
+
+# Notification schemas
+from .notification import (
+    BulkNotificationRequest,
+    BulkNotificationResult,
+    Notification,
+    NotificationBase,
+    NotificationChannel,
+    NotificationChannelBase,
+    NotificationChannelCreate,
+    NotificationChannelUpdate,
+    NotificationCreate,
+    NotificationDelivery,
+    NotificationDeliveryBase,
+    NotificationDeliveryCreate,
+    NotificationDigest,
+    NotificationPreferences,
+    NotificationPreferencesBase,
+    NotificationPreferencesCreate,
+    NotificationPreferencesUpdate,
+    NotificationStatistics,
+    NotificationTemplate,
+    NotificationTemplateBase,
+    NotificationTemplateCreate,
+    NotificationTemplateUpdate,
+    NotificationUpdate,
+    PaginatedNotificationChannelsResponse,
+    PaginatedNotificationsResponse,
+    PaginatedNotificationTemplatesResponse,
+)
+
+# Stock schemas
+from .stock import (
+    HotStock,
+    HotStocksResponse,
+    MarketIndex,
+    PaginatedPriceDataResponse,
+    PaginatedStocksResponse,
+    PriceData,
+    PriceDataBase,
+    PriceDataCreate,
+    PriceHistoryQuery,
+    PriceHistoryResponse,
+    Stock,
+    StockBase,
+    StockCreate,
+    StockDailyMetrics,
+    StockDailyMetricsBase,
+    StockDailyMetricsCreate,
+    StockDetail,
+    StockSearchQuery,
+    StockSearchResult,
+    StockUpdate,
+    TechnicalIndicators,
+)
+
+# Subscription schemas
+from .subscription import (
+    BillingInfo,
+    Invoice,
+    Plan,
+    PlanComparison,
+    PlanCreate,
+    PlanUpdate,
+    Subscription,
+    SubscriptionAnalytics,
+    SubscriptionCreate,
+    SubscriptionUpdate,
+    SubscriptionWithUsage,
+    UsageQuota,
+)
+
+# User schemas
+from .user import (
+    AuthResponse,
+    AuthToken,
+    OAuthLogin,
+    PasswordReset,
+    PasswordResetConfirm,
+    User,
+    UserLogin,
+    UserOAuthIdentity,
+    UserOAuthIdentityCreate,
+    UserProfile,
+    UserProfileUpdate,
+    UserRegistration,
+    UserWithProfile,
+)
+
+# Watchlist schemas
+from .watchlist import (
+    BulkOperationResult,
+    BulkWatchlistStockOperation,
+    PaginatedPublicWatchlistsResponse,
+    PaginatedWatchlistAlertsResponse,
+    PaginatedWatchlistsResponse,
+    PaginatedWatchlistStocksResponse,
+    PublicWatchlistSummary,
+    Watchlist,
+    WatchlistAlert,
+    WatchlistAlertBase,
+    WatchlistAlertCreate,
+    WatchlistBase,
+    WatchlistCreate,
+    WatchlistExportRequest,
+    WatchlistExportResponse,
+    WatchlistFollower,
+    WatchlistImportRequest,
+    WatchlistPerformance,
+    WatchlistStatistics,
+    WatchlistStock,
+    WatchlistStockBase,
+    WatchlistStockCreate,
+    WatchlistStockUpdate,
+    WatchlistStockWithPrice,
+    WatchlistUpdate,
+    WatchlistWithStocks,
 )
 
 __all__ = [
     # Base
     "BaseSchema",
-    "TimestampSchema", 
+    "TimestampSchema",
     "UUIDSchema",
     "PaginatedResponse",
     "PaginationParams",
     "ErrorResponse",
-    
     # User
     "UserRegistration",
     "UserLogin",
@@ -230,7 +228,6 @@ __all__ = [
     "AuthResponse",
     "UserOAuthIdentity",
     "UserOAuthIdentityCreate",
-    
     # Subscription
     "Plan",
     "PlanCreate",
@@ -244,7 +241,6 @@ __all__ = [
     "Invoice",
     "PlanComparison",
     "SubscriptionAnalytics",
-    
     # Stock
     "StockBase",
     "StockCreate",
@@ -267,7 +263,6 @@ __all__ = [
     "TechnicalIndicators",
     "PaginatedStocksResponse",
     "PaginatedPriceDataResponse",
-    
     # Financial
     "FinancialReportBase",
     "FinancialReportCreate",
@@ -295,7 +290,6 @@ __all__ = [
     "PaginatedBalanceSheetsResponse",
     "PaginatedIncomeStatementsResponse",
     "PaginatedCashFlowsResponse",
-    
     # AI Analysis
     "AIAnalysisRequest",
     "BulkAnalysisRequest",
@@ -314,7 +308,6 @@ __all__ = [
     "AnalysisExportResponse",
     "PaginatedAIAnalysisResponse",
     "AnalysisStatistics",
-    
     # Watchlist
     "WatchlistBase",
     "WatchlistCreate",
@@ -342,7 +335,6 @@ __all__ = [
     "PaginatedWatchlistStocksResponse",
     "PaginatedWatchlistAlertsResponse",
     "PaginatedPublicWatchlistsResponse",
-    
     # Notification
     "NotificationBase",
     "NotificationCreate",
@@ -370,7 +362,6 @@ __all__ = [
     "PaginatedNotificationsResponse",
     "PaginatedNotificationTemplatesResponse",
     "PaginatedNotificationChannelsResponse",
-    
     # API Response
     "APIResponse",
     "ErrorDetail",

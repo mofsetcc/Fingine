@@ -14,7 +14,8 @@ from app.services.user_profile_service import (
     ProfileNotFoundError,
     InvalidProfileDataError
 )
-from app.models.user import User, UserProfile, UserActivity, UserOAuthIdentity
+from app.models.user import User, UserProfile, UserOAuthIdentity
+from app.models.logs import APIUsageLog as UserActivity
 from app.schemas.user import UserProfileUpdate
 from app.services.email_service import EmailService
 

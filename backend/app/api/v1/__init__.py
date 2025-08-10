@@ -2,7 +2,18 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import health, auth, oauth, users, profile, stocks, watchlist, subscription, gdpr, analysis
+from app.api.v1 import (
+    analysis,
+    auth,
+    gdpr,
+    health,
+    oauth,
+    profile,
+    stocks,
+    subscription,
+    users,
+    watchlist,
+)
 
 api_router = APIRouter()
 
@@ -15,5 +26,7 @@ api_router.include_router(profile.router, prefix="/profile", tags=["profile"])
 api_router.include_router(stocks.router, prefix="/stocks", tags=["stocks"])
 api_router.include_router(analysis.router, prefix="/analysis", tags=["ai-analysis"])
 api_router.include_router(watchlist.router, prefix="/watchlist", tags=["watchlist"])
-api_router.include_router(subscription.router, prefix="/subscription", tags=["subscription"])
+api_router.include_router(
+    subscription.router, prefix="/subscription", tags=["subscription"]
+)
 api_router.include_router(gdpr.router, prefix="/gdpr", tags=["gdpr"])

@@ -5,9 +5,4 @@ from .email_service import EmailService
 from .oauth_service import OAuthService
 from .user_service import UserService
 
-__all__ = [
-    "AuthService",
-    "EmailService", 
-    "OAuthService",
-    "UserService"
-]
+__all__ = ["AuthService", "EmailService", "OAuthService", "UserService"]

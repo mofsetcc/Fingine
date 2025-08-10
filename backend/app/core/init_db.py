@@ -21,15 +21,15 @@ async def init_db():
 
 async def create_default_plans(session: AsyncSession):
     """Create default subscription plans."""
-    
+
     # Check if plans already exist
     result = await session.execute("SELECT COUNT(*) FROM plans")
     count = result.scalar()
-    
+
     if count > 0:
         print("📋 Subscription plans already exist, skipping...")
         return
-    
+
     # Create default plans
     plans = [
         Plan(
@@ -40,11 +40,11 @@ async def create_default_plans(session: AsyncSession):
                 "real_time_data": False,
                 "advanced_charts": False,
                 "api_access": False,
-                "priority_support": False
+                "priority_support": False,
             },
             api_quota_daily=10,
             ai_analysis_quota_daily=5,
-            is_active=True
+            is_active=True,
         ),
         Plan(
             plan_name="Pro",
@@ -56,11 +56,11 @@ async def create_default_plans(session: AsyncSession):
                 "api_access": True,
                 "priority_support": False,
                 "watchlist_alerts": True,
-                "export_data": True
+                "export_data": True,
             },
             api_quota_daily=100,
             ai_analysis_quota_daily=50,
-            is_active=True
+            is_active=True,
         ),
         Plan(
             plan_name="Business",
@@ -75,14 +75,14 @@ async def create_default_plans(session: AsyncSession):
                 "export_data": True,
                 "bulk_analysis": True,
                 "custom_reports": True,
-                "white_label": True
+                "white_label": True,
             },
             api_quota_daily=1000,
             ai_analysis_quota_daily=500,
-            is_active=True
-        )
+            is_active=True,
+        ),
     ]
-    
+
     for plan in plans:
         session.add(plan)
         print(f"📦 Created plan: {plan.plan_name} (¥{plan.price_monthly}/month)")

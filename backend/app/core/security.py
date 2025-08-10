@@ -4,7 +4,7 @@ Security utilities for authentication and authorization.
 
 import secrets
 from datetime import datetime, timedelta
-from typing import Any, Dict, Tuple, Union, Optional
+from typing import Any, Dict, Optional, Tuple, Union
 
 import bcrypt
 import jwt
@@ -26,11 +26,11 @@ def create_access_token(
 ) -> str:
     """
     Create a JWT access token.
-    
+
     Args:
         subject: The subject (usually user ID) to encode in the token
         expires_delta: Optional custom expiration time
-        
+
     Returns:
         Encoded JWT token string
     """
@@ -38,7 +38,7 @@ def create_access_token(
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     to_encode = {"exp": expire, "sub": str(subject), "type": "access"}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -47,10 +47,10 @@ def create_access_token(
 def create_refresh_token(subject: Union[str, Any]) -> str:
     """
     Create a JWT refresh token.
-    
+
     Args:
         subject: The subject (usually user ID) to encode in the token
-        
+
     Returns:
         Encoded JWT refresh token string
     """
@@ -63,11 +63,11 @@ def create_refresh_token(subject: Union[str, Any]) -> str:
 def verify_token(token: str, token_type: str = "access") -> Optional[str]:
     """
     Verify and decode a JWT token.
-    
+
     Args:
         token: The JWT token to verify
         token_type: Expected token type ("access" or "refresh")
-        
+
     Returns:
         The subject (user ID) if token is valid, None otherwise
     """
@@ -75,10 +75,10 @@ def verify_token(token: str, token_type: str = "access") -> Optional[str]:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         token_type_claim: str = payload.get("type")
-        
+
         if user_id is None or token_type_claim != token_type:
             return None
-            
+
         return user_id
     except jwt.ExpiredSignatureError:
         return None
@@ -91,10 +91,10 @@ def verify_token(token: str, token_type: str = "access") -> Optional[str]:
 def is_token_expired(token: str) -> bool:
     """
     Check if a JWT token is expired.
-    
+
     Args:
         token: The JWT token to check
-        
+
     Returns:
         True if token is expired, False otherwise
     """
@@ -110,10 +110,10 @@ def is_token_expired(token: str) -> bool:
 def get_token_payload(token: str) -> Optional[Dict[str, Any]]:
     """
     Get token payload without verification (for expired tokens).
-    
+
     Args:
         token: The JWT token
-        
+
     Returns:
         Token payload if valid format, None otherwise
     """
@@ -126,32 +126,32 @@ def get_token_payload(token: str) -> Optional[Dict[str, Any]]:
 def refresh_access_token(refresh_token: str) -> Optional[Tuple[str, str]]:
     """
     Generate new access token using refresh token.
-    
+
     Args:
         refresh_token: Valid refresh token
-        
+
     Returns:
         Tuple of (new_access_token, new_refresh_token) if successful, None otherwise
     """
     user_id = verify_token(refresh_token, "refresh")
     if not user_id:
         return None
-    
+
     # Generate new tokens
     new_access_token = create_access_token(user_id)
     new_refresh_token = create_refresh_token(user_id)
-    
+
     return new_access_token, new_refresh_token
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a password against its hash.
-    
+
     Args:
         plain_password: The plain text password
         hashed_password: The hashed password to verify against
-        
+
     Returns:
         True if password matches, False otherwise
     """
@@ -161,10 +161,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     """
     Hash a password using bcrypt.
-    
+
     Args:
         password: The plain text password to hash
-        
+
     Returns:
         The hashed password
     """
@@ -174,7 +174,7 @@ def get_password_hash(password: str) -> str:
 def generate_password_reset_token() -> str:
     """
     Generate a secure random token for password reset.
-    
+
     Returns:
         A secure random token string
     """
@@ -184,7 +184,7 @@ def generate_password_reset_token() -> str:
 def generate_email_verification_token() -> str:
     """
     Generate a secure random token for email verification.
-    
+
     Returns:
         A secure random token string
     """
@@ -194,45 +194,45 @@ def generate_email_verification_token() -> str:
 def validate_password_strength(password: str) -> tuple[bool, list[str]]:
     """
     Validate password strength according to security requirements.
-    
+
     Args:
         password: The password to validate
-        
+
     Returns:
         Tuple of (is_valid, list_of_errors)
     """
     errors = []
-    
+
     if len(password) < 8:
         errors.append("Password must be at least 8 characters long")
-    
+
     if len(password) > 128:
         errors.append("Password must be no more than 128 characters long")
-    
+
     if not any(c.isupper() for c in password):
         errors.append("Password must contain at least one uppercase letter")
-    
+
     if not any(c.islower() for c in password):
         errors.append("Password must contain at least one lowercase letter")
-    
+
     if not any(c.isdigit() for c in password):
         errors.append("Password must contain at least one digit")
-    
+
     # Check for at least one special character
     special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?"
     if not any(c in special_chars for c in password):
         errors.append("Password must contain at least one special character")
-    
+
     return len(errors) == 0, errors
 
 
 def create_email_verification_token(email: str) -> str:
     """
     Create a JWT token for email verification.
-    
+
     Args:
         email: The email address to verify
-        
+
     Returns:
         Encoded JWT token for email verification
     """
@@ -245,10 +245,10 @@ def create_email_verification_token(email: str) -> str:
 def verify_email_verification_token(token: str) -> Optional[str]:
     """
     Verify an email verification token.
-    
+
     Args:
         token: The JWT token to verify
-        
+
     Returns:
         The email address if token is valid, None otherwise
     """
@@ -256,10 +256,10 @@ def verify_email_verification_token(token: str) -> Optional[str]:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("email")
         token_type: str = payload.get("type")
-        
+
         if email is None or token_type != "email_verification":
             return None
-            
+
         return email
     except jwt.PyJWTError:
         return None
@@ -268,10 +268,10 @@ def verify_email_verification_token(token: str) -> Optional[str]:
 def create_password_reset_token(email: str) -> str:
     """
     Create a JWT token for password reset.
-    
+
     Args:
         email: The email address for password reset
-        
+
     Returns:
         Encoded JWT token for password reset
     """
@@ -284,10 +284,10 @@ def create_password_reset_token(email: str) -> str:
 def verify_password_reset_token(token: str) -> Optional[str]:
     """
     Verify a password reset token.
-    
+
     Args:
         token: The JWT token to verify
-        
+
     Returns:
         The email address if token is valid, None otherwise
     """
@@ -295,10 +295,10 @@ def verify_password_reset_token(token: str) -> Optional[str]:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("email")
         token_type: str = payload.get("type")
-        
+
         if email is None or token_type != "password_reset":
             return None
-            
+
         return email
     except jwt.PyJWTError:
         return None
@@ -307,7 +307,7 @@ def verify_password_reset_token(token: str) -> Optional[str]:
 def generate_api_key() -> str:
     """
     Generate a secure API key.
-    
+
     Returns:
         A secure random API key string
     """
@@ -317,10 +317,10 @@ def generate_api_key() -> str:
 def hash_api_key(api_key: str) -> str:
     """
     Hash an API key for secure storage.
-    
+
     Args:
         api_key: The API key to hash
-        
+
     Returns:
         The hashed API key
     """
@@ -330,11 +330,11 @@ def hash_api_key(api_key: str) -> str:
 def verify_api_key(plain_api_key: str, hashed_api_key: str) -> bool:
     """
     Verify an API key against its hash.
-    
+
     Args:
         plain_api_key: The plain text API key
         hashed_api_key: The hashed API key to verify against
-        
+
     Returns:
         True if API key matches, False otherwise
     """

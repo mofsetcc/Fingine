@@ -10,8 +10,8 @@ from datetime import datetime, date
 from decimal import Decimal
 
 from app.adapters.alpha_vantage_adapter import AlphaVantageAdapter
-from app.adapters.yahoo_finance_adapter import YahooFinanceAdapter
-from app.adapters.edinet_adapter import EdinetAdapter
+from app.adapters.yahoo_finance_adapter import YahooFinanceJapanAdapter as YahooFinanceAdapter
+from app.adapters.edinet_adapter import EDINETAdapter as EdinetAdapter
 from app.adapters.news_adapter import NewsAdapter
 from app.services.ai_analysis_service import AIAnalysisService
 from app.services.data_source_service import DataSourceService

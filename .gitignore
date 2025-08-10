@@ -133,3 +133,6 @@ coverage/
 # Misc
 *.tgz
 *.tar.gz
+# macOS specific files
+._*
+.DS_Store
