@@ -1,5 +1,5 @@
 # Multi-stage build for React frontend
-FROM node:18-alpine as builder
+FROM node:18-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -8,10 +8,11 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy source code
 COPY . .
+RUN npm run build
 
 # Build arguments
 ARG REACT_APP_API_URL=http://localhost:8000
